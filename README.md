@@ -18,7 +18,7 @@ Database: PostgreSQL/MySQL
 Data Validation: Pydantic
 ORM: SQLAlchemy
 
-## Frontend
+Frontend
 
 Framework: React
 Styling: Tailwind CSS
