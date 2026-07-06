@@ -11,16 +11,5 @@ Modern UI: A clean, responsive interface built for both desktop and mobile devic
 
 ## 🛠 Tech Stack
 
-Backend
-
-Framework: FastAPI (Python)
-Database: PostgreSQL/MySQL
-Data Validation: Pydantic
-ORM: SQLAlchemy
-
-Frontend
-
-Framework: React
-Styling: Tailwind CSS
-Icons: Lucide React
-Charts: Recharts
+**Backend**: Framework: FastAPI (Python), Database: PostgreSQL/MySQL, Data Validation: Pydantic, ORM: SQLAlchemy
+**Frontend**: Framework: React, Styling: Tailwind CSS, Icons: Lucide React, Charts: Recharts
