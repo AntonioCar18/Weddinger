@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+.scrollbar-gutter-stable {
+    scrollbar-gutter: stable;
+}
+
+/* Uklanja plavi okvir kada se klikne na graf */
+.recharts-wrapper svg:focus {
+  outline: none !important;
+}
+
+/* Osigurava da se ništa ne događa kad se klikne */
+.recharts-wrapper {
+  cursor: default !important;
+}
