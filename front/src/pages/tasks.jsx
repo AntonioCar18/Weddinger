@@ -232,8 +232,7 @@ const Tasks = () => {
                                     </button>
                                 ))}
                             </div>
-                            <div className="flex flex-col gap-4 mt-4">
-                                {/* Maksimalno 5 zadataka! */}
+                            <div className="flex flex-col gap-4 mt-4 mb-4">
                                 {Array.isArray(tasks) && tasks.slice(0, 5).map((task) => (
                                     <TaskTableItem key={task.task_id} task={task} />
                                 ))}
