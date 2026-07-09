@@ -54,7 +54,7 @@ class RegisterModel(BaseModel):
     partner_one: str
     partner_two: str
     wedding_date: str = None
-    weddning_location: str = None
+    wedding_location: str = None
 
 class GuestModel(BaseModel):
     name: str
@@ -81,6 +81,15 @@ class BudgetModel(BaseModel):
     item_category: str
     deposit_amount: Optional[float] = None
     item_notes: Optional[str] = None
+
+class TaskModel(BaseModel):
+    task_name: str
+    task_owner: str
+    task_category: str
+    task_priority: str
+    task_due_date: Optional[str] = None
+    task_is_completed: bool = False
+    task_notes: Optional[str] = None
 
 # --- Rute ---
 @app.post("/api/login")
@@ -114,7 +123,7 @@ def register(register_data: RegisterModel):
     
     hashed = pwd_context.hash(register_data.password)
     query = "INSERT INTO users (email, password, partner_one, partner_two, wedding_date, wedding_location) VALUES (%s, %s, %s, %s, %s, %s);"
-    if not executeQuery(query, (register_data.email, hashed, register_data.partner_one, register_data.partner_two, register_data.wedding_date, register_data.weddning_location)):
+    if not executeQuery(query, (register_data.email, hashed, register_data.partner_one, register_data.partner_two, register_data.wedding_date, register_data.wedding_location)):
         raise HTTPException(status_code=500, detail="Greška pri registraciji")
     return {"message": "Uspješna registracija"}
 
@@ -251,4 +260,30 @@ def put_item(budget_id: int, budget_data: BudgetModel, current_user: dict = Depe
 @app.delete("/api/budget/{budget_id}")
 def delete_item(budget_id: int, current_user: dict = Depends(get_current_user)):
     success = executeQuery("DELETE FROM budget WHERE id = %s AND user_id = %s;", (budget_id, current_user.get("sub")))
-    return{"message": "Uspješno obrisano"} if success else HTTPException(status_code=500)
+    return {"message": "Uspješno obrisano"} if success else HTTPException(status_code=500)
+
+#Zadaci
+
+@app.post("/api/tasks")
+def add_task(task_data: TaskModel, current_user: dict = Depends(get_current_user)):
+    user_id = current_user.get("sub")
+    query = "INSERT INTO tasks (user_id, task_name, owner, category, priority, due_date, is_completed, notes) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);"
+    success = executeQuery(query, (user_id, task_data.task_name, task_data.task_owner, task_data.task_category, task_data.task_priority, task_data.task_due_date, task_data.task_is_completed, task_data.task_notes))
+    return {"message": "Zadatak uspješno dodan"} if success else HTTPException(status_code=500)
+
+@app.get("/api/tasks")
+def get_tasks(current_user: dict = Depends(get_current_user)):
+    tasks = takeFromBase("SELECT * FROM tasks WHERE user_id = %s ORDER BY task_id ASC;", (current_user.get("sub"),))
+    return tasks if tasks is not None else []
+
+@app.put("/api/tasks/{task_id}")
+def update_task(task_id: int, task_data: TaskModel, current_user: dict = Depends(get_current_user)):
+    user_id = current_user.get("sub")
+    query = """ UPDATE tasks SET task_name = %s, owner = %s, category = %s, priority = %s, due_date = %s, is_completed = %s, notes = %s WHERE id = %s AND user_id = %s """
+    success = executeQuery(query, (task_data.task_name, task_data.task_owner, task_data.task_category, task_data.task_priority, task_data.task_due_date, task_data.task_is_completed, task_data.task_notes, task_id , user_id))
+    return {"message": "Uspješno ažurirano"} if success else HTTPException(status_code=500)
+
+@app.delete("/api/tasks/{task_id}")
+def delete_task(task_id: int, current_user: dict = Depends(get_current_user)):
+    success = executeQuery("DELETE FROM tasks WHERE task_id = %s AND user_id = %s;", (task_id, current_user.get("sub")))
+    return {"message": "Uspješno obrisano"} if success else HTTPException(status_code=500)

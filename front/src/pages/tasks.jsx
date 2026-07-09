@@ -1,12 +1,87 @@
 import { useState } from "react";
+import { useEffect } from "react";
 import Sidebar from "../components/sidebar";
 import weddingerLogo from "../assets/logo.png";
 import { Calendar, Circle } from 'lucide-react';
 import progressBarTask from "../components/progressBarTask";
+import AddTask from "../components/addTask";
 
 const Tasks = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    const tasks = [{ done: 10, total: 100, progress: 10 }, { done: 20, total: 100, progress: 20 }, { done: 30, total: 100, progress: 30 }]; // Replace with your actual tasks data
+    const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
+    const [tasks, setTasks] = useState([]);
+    const [partners, setPartners] = useState([]);
+
+    const newTask = async (taskData) => {
+        try {
+            const response = await fetch("/api/tasks", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                credentials: "include",
+                body: JSON.stringify(taskData),
+            });
+
+            if (!response.ok) {
+                throw new Error("Greška prilikom dodavanja zadatka");
+            }
+            const data = await response.json();
+            console.log(data.message);
+            setIsAddTaskOpen(false);
+        }
+        catch (error) {
+            console.error(error);
+            alert("Došlo je do greške prilikom dodavanja zadatka.");
+        }
+    };
+
+    const getPartners = async () => {
+        try {
+            const response = await fetch("/api/me", {
+                method: "GET",
+                credentials: "include",
+            });
+
+            if (!response.ok) {
+                throw new Error("Greška prilikom dohvaćanja partnera");
+            }
+
+            const data = await response.json();
+            if (data.user) {
+            setPartners([data.user.partner_one, data.user.partner_two]);
+            }
+        } catch (error) {
+            console.error(error);
+            alert("Došlo je do greške prilikom dohvaćanja partnera.");
+            return [];
+        }
+    };
+
+    const getTasks = async () => {
+        try {
+            const response = await fetch("/api/tasks", {
+                method: "GET",
+                credentials: "include",
+            });
+
+            if (!response.ok) {
+                throw new Error("Greška prilikom dohvaćanja zadataka");
+            }
+
+            const data = await response.json();
+            setTasks(data);
+
+        } catch (error) {
+            console.error(error);
+            alert("Došlo je do greške prilikom dohvaćanja zadataka.");
+        }
+    }
+
+    useEffect(() => {
+        getPartners();
+        getTasks();
+    }, []);
 
     return (
         <div className="h-dvh w-screen flex overflow-hidden bg-[#fcfbfa] relative">
@@ -46,9 +121,11 @@ const Tasks = () => {
                         <div className="flex items-center space-x-3">
                             <button 
                                 className="hidden lg:block cursor-pointer bg-[#B8926A] text-white shadow-md shadow-[#B8926A]/20 px-4 lg:px-8 py-2.5 lg:py-3.5 rounded-xl text-sm lg:text-base font-semibold hover:bg-[#a07b5c] active:scale-98 transition-all duration-200 whitespace-nowrap"
+                                onClick={() => setIsAddTaskOpen(true)}
                             >
                                 <span className="inline cursor-pointer lg:hidden">+ </span>Dodaj zadatak
                             </button>
+                            {isAddTaskOpen && <AddTask onSave={newTask} onClose={() => setIsAddTaskOpen(false)} partners={partners} />}
                         </div>
                     </div>
                     <div className="px-4 md:px-10 lg:px-16 py-4 flex flex-col lg:flex-row gap-6 h-fit pb-24 lg:pb-6">
@@ -63,20 +140,22 @@ const Tasks = () => {
                                     {/* Ovdje treba ubaciti prave datume tj. od trenutka kreiranja accounta do mjesec dana nakon svadbe */}
                                 </div>
                             </div>
-                            <div className="flex flex-col gap-6 items-center justify-center mb-8 mt-8 text-gray-400 text-[14px] lg:text-[18px] lg:pl-4 lg:pr-4">
+                            <div className="flex flex-col gap-6 items-center justify-center mb-20 mt-20 text-gray-400 text-[14px] lg:text-[18px] lg:pl-4 lg:pr-4">
                                 {tasks.length === 0 ? (
                                     <div className="flex flex-col items-center">
                                         <p className="text-center">Trenutačno nemate dodatnih zadataka.</p>
                                         <button 
                                                 className="mt-2 text-[#B8926A] font-semibold hover:underline cursor-pointer"
+                                                onClick={() => setIsAddTaskOpen(true)}
                                             >
                                                 Dodaj prvi zadatak
                                             </button>
+                                            {isAddTaskOpen && <AddTask onSave={newTask} onClose={() => setIsAddTaskOpen(false)} partners={partners} />}
                                     </div>
                                 ) : (
                                     tasks.map((task) => (
-                                        <div key={task.id} className="w-full">
-                                            {progressBarTask(task.done, task.total, task.progress)}
+                                        <div key={task.task_id} className="w-full">
+                                            {progressBarTask(task.is_completed, 100, 0)}
                                         </div>
                                     ))
                                 )}
