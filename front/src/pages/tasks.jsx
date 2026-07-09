@@ -3,14 +3,16 @@ import { useEffect } from "react";
 import Sidebar from "../components/sidebar";
 import weddingerLogo from "../assets/logo.png";
 import { Calendar, Circle } from 'lucide-react';
-import progressBarTask from "../components/progressBarTask";
+import ProgressBarTask from "../components/progressBarTask";
 import AddTask from "../components/addTask";
+import TaskTableItem from "../components/taskTableItem";
 
 const Tasks = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
     const [tasks, setTasks] = useState([]);
     const [partners, setPartners] = useState([]);
+    const [tasksSummary, setTasksSummary] = useState({ completed_tasks: 0, incomplete_tasks: 0 });
 
     const newTask = async (taskData) => {
         try {
@@ -27,8 +29,10 @@ const Tasks = () => {
                 throw new Error("Greška prilikom dodavanja zadatka");
             }
             const data = await response.json();
-            console.log(data.message);
+            console.log(tasks.message);
             setIsAddTaskOpen(false);
+            getTasks();
+            getTasksSummary();
         }
         catch (error) {
             console.error(error);
@@ -69,8 +73,28 @@ const Tasks = () => {
                 throw new Error("Greška prilikom dohvaćanja zadataka");
             }
 
+            const result = await response.json();
+            setTasks(result.data);
+
+        } catch (error) {
+            console.error(error);
+            alert("Došlo je do greške prilikom dohvaćanja zadataka.");
+        }
+    }
+
+    const getTasksSummary = async () => {
+        try {
+            const response = await fetch("/api/tasks/summary", {
+                method: "GET",
+                credentials: "include",
+            });
+
+            if (!response.ok) {
+                throw new Error("Greška prilikom dohvaćanja zadataka");
+            }
+
             const data = await response.json();
-            setTasks(data);
+            setTasksSummary(data.data || []);
 
         } catch (error) {
             console.error(error);
@@ -81,7 +105,18 @@ const Tasks = () => {
     useEffect(() => {
         getPartners();
         getTasks();
+        getTasksSummary();
+        const interval = setInterval(getTasks, 10000);
+        const summaryInterval = setInterval(getTasksSummary, 10000);
+        return () => {
+            clearInterval(interval);
+            clearInterval(summaryInterval);
+        };
     }, []);
+
+    const completedTasks = tasks?.completed_tasks || 0;
+    const incompleteTasks = tasks?.incomplete_tasks || 0;
+    const totalTasks = tasks?.total_tasks || 0;
 
     return (
         <div className="h-dvh w-screen flex overflow-hidden bg-[#fcfbfa] relative">
@@ -101,7 +136,7 @@ const Tasks = () => {
                     <Sidebar activeTab="Zadaci"/>
                 </div>
                 {/* Main content area */}
-                <div className="flex flex-1 h-screen overflow-hidden bg-[#fcfbfa]">
+                <div className="flex flex-1 h-screen overflow-y-auto bg-[#fcfbfa]">
                     <div className="flex flex-col w-full h-full relative">
                     <div className="flex px-4 md:px-10 lg:px-16 pt-6 lg:pt-12 pb-4 flex-row items-center justify-between w-full border-b lg:border-none border-gray-100 bg-white lg:bg-transparent">
                         <button 
@@ -140,7 +175,7 @@ const Tasks = () => {
                                     {/* Ovdje treba ubaciti prave datume tj. od trenutka kreiranja accounta do mjesec dana nakon svadbe */}
                                 </div>
                             </div>
-                            <div className="flex flex-col gap-6 items-center justify-center mb-20 mt-20 text-gray-400 text-[14px] lg:text-[18px] lg:pl-4 lg:pr-4">
+                            <div className="flex flex-col gap-6 items-center justify-center mb-15 mt-10 text-gray-400 text-[14px] lg:text-[18px] lg:pl-4 lg:pr-4">
                                 {tasks.length === 0 ? (
                                     <div className="flex flex-col items-center">
                                         <p className="text-center">Trenutačno nemate dodatnih zadataka.</p>
@@ -153,22 +188,27 @@ const Tasks = () => {
                                             {isAddTaskOpen && <AddTask onSave={newTask} onClose={() => setIsAddTaskOpen(false)} partners={partners} />}
                                     </div>
                                 ) : (
-                                    tasks.map((task) => (
-                                        <div key={task.task_id} className="w-full">
-                                            {progressBarTask(task.is_completed, 100, 0)}
+                                    Array.isArray(tasksSummary) && tasksSummary.map((task) => (
+                                        <div key={task.category} className="w-full">
+                                            <ProgressBarTask
+                                                category={task.category}
+                                                done={task.completed_tasks}
+                                                total={task.total_tasks}
+                                                progress={((task.completed_tasks / task.total_tasks) * 100).toFixed(2)}
+                                            />
                                         </div>
                                     ))
                                 )}
                             </div>
                             <div className="flex border-t-2 border-gray-200">
                                 <div className="flex justify-start mt-6 gap-4">
-                                    <div className="flex items-center gap-1">
-                                        <Circle className="w-4 h-4" fill="#B8926A" stroke="#B8926A" />
-                                        <p>Obavljeni zadaci</p>
+                                    <div className="flex items-center gap-4">
+                                        <Circle className="w-3 h-3" fill="#B8926A" stroke="#B8926A" />
+                                        <p className="text-gray-600 text-[13px] lg:text-[16px]">Obavljeni zadaci</p>
                                     </div>
-                                    <div className="flex items-center gap-1">
-                                        <Circle className="w-4 h-4" fill="#E2E8F0" stroke="#E2E8F0" />
-                                        <p>Neobavljeni zadaci</p>
+                                    <div className="flex items-center gap-4">
+                                        <Circle className="w-3 h-3" fill="#E2E8F0" stroke="#E2E8F0" />
+                                        <p className="text-gray-600 text-[13px] lg:text-[16px]">Neobavljeni zadaci</p>
                                     </div>
                                 </div>
                             </div>
@@ -176,8 +216,29 @@ const Tasks = () => {
                             <div className="flex flex-col rounded-2xl bg-white shadow lg:w-1/3 p-6">
                             {/* Ovdje idu AI savjeti ovisno o situaciji */}
 
-                            <p className="text-gray-600">AI savjeti ovisno o situaciji</p>
+                            <p className="text-gray-600 text-[12px] lg:text-[16px]">AI savjeti ovisno o situaciji</p>
                             </div>
+                    </div>
+                    <div className="flex flex-col lg:flex-row gap-6 px-4 md:px-10 lg:px-16 py-4 h-fit pb-24 lg:pb-6">
+                        <div className="flex w-full shadow py-4 bg-white rounded-2xl px-6 flex-col gap-5 pt-8 pl-8">
+                            <h2 className='font-bold text-[20px] lg:text-[26px] text-gray-800'>Svi zadaci</h2>
+                            <div className="flex gap-4 items-center">
+                                {Array.isArray(tasksSummary) && tasksSummary.map((task) => (
+                                    <button 
+                                        key={task.category}
+                                        className="px-4 py-2 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 transition-all text-sm font-medium text-gray-700"
+                                    >
+                                        {task.category}
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="flex flex-col gap-4 mt-4">
+                                {/* Maksimalno 5 zadataka! */}
+                                {Array.isArray(tasks) && tasks.slice(0, 5).map((task) => (
+                                    <TaskTableItem key={task.task_id} task={task} />
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

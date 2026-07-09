@@ -274,7 +274,32 @@ def add_task(task_data: TaskModel, current_user: dict = Depends(get_current_user
 @app.get("/api/tasks")
 def get_tasks(current_user: dict = Depends(get_current_user)):
     tasks = takeFromBase("SELECT * FROM tasks WHERE user_id = %s ORDER BY task_id ASC;", (current_user.get("sub"),))
-    return tasks if tasks is not None else []
+    return {
+        "data": tasks if tasks is not None else [],
+        "completed_tasks": sum(1 for task in tasks if task['is_completed']) if tasks else 0,
+        "incomplete_tasks": sum(1 for task in tasks if not task['is_completed']) if tasks else 0
+    }
+
+@app.get("/api/tasks/summary")
+def get_tasks_summary(current_user: dict = Depends(get_current_user)):
+    query = """
+        SELECT 
+            category,
+            COUNT(*) AS total_tasks,
+            SUM(CASE WHEN is_completed THEN 1 ELSE 0 END) AS completed_tasks
+        FROM tasks
+        WHERE user_id = %s
+        GROUP BY category
+        ORDER BY category ASC;
+    """
+
+    stats = takeFromBase(query, (current_user.get("sub"),))
+    return {
+        "data": stats if stats is not None else [],
+        "total_tasks": sum(stat['total_tasks'] for stat in stats) if stats else 0,
+        "total_completed_tasks": sum(stat['completed_tasks'] for stat in stats) if stats else 0,
+        "total_incomplete_tasks": sum(stat['total_tasks'] - stat['completed_tasks'] for stat in stats) if stats else 0
+    }
 
 @app.put("/api/tasks/{task_id}")
 def update_task(task_id: int, task_data: TaskModel, current_user: dict = Depends(get_current_user)):

@@ -1,16 +1,23 @@
-const progressBarTask = (done, total, progress) => {
+const ProgressBarTask = ({ category, done, total, progress }) => {
     return (
-            <><div className="flex justify-between items-center gap-4">
-            <h3 className="font-semibold text-gray-700">Venue</h3>
-            <p>{progress}% ({done}/{total})</p>
-        </div><div className="mt-2 h-4 w-full bg-gray-300 rounded-xl">
-                <div
-                    style={{ width: `${progress}%` }}
-                    className="h-full bg-[#B8926A] rounded-xl"
-                >
-                </div>
-            </div></>
-    );
-}
+        <div className="w-full">
+            {/* Header sekcija - koristimo malo nježniju sivu za tekst */}
+            <div className="flex justify-between items-center mb-2">
+                <h3 className="font-semibold text-gray-800">{category}</h3>
+                <p className="text-sm text-gray-500 font-medium">
+                    {progress}% <span className="text-gray-400">({done}/{total})</span>
+                </p>
+            </div>
 
-export default progressBarTask;
+            {/* Progress bar - s mekim zaobljenjima i laganom pozadinom */}
+            <div className="h-3 w-full bg-gray-100 rounded-full overflow-hidden border border-gray-100">
+                <div
+                    style={{ width: `${Math.min(progress, 100)}%` }}
+                    className="h-full bg-[#B8926A] rounded-full transition-all duration-500 ease-out"
+                />
+            </div>
+        </div>
+    );
+};
+
+export default ProgressBarTask;
