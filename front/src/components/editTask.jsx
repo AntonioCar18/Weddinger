@@ -1,14 +1,15 @@
 import { useState } from "react";
 
-const AddTask = ({ onClose, onSave, partners }) => {
+const EditTask = ({ onClose, onSave, partners, task }) => {
     const [taskData, setTaskData] = useState({
-        task_name: "",
-        task_owner: "",
-        task_category: "Prostor", // Početna vrijednost prema listi
-        task_priority: "Srednji",
-        task_due_date: "",
-        task_notes: "",
-        task_is_completed: false
+        task_id: task?.task_id || null,
+        task_name: task?.task_name || "",
+        task_owner: task?.owner || "",
+        task_category: task?.category || "Prostor", // Početna vrijednost prema listi
+        task_priority: task?.priority || "Srednji",
+        task_due_date: task?.due_date || "",
+        task_notes: task?.notes || "",
+        task_is_completed: task?.is_completed || false
     });
 
     const handleChange = (e) => {
@@ -36,7 +37,7 @@ const AddTask = ({ onClose, onSave, partners }) => {
                     &times;
                 </button>
 
-                <h1 className="text-2xl font-extrabold text-gray-800 text-center mb-6">Novi zadatak</h1>
+                <h1 className="text-2xl font-extrabold text-gray-800 text-center mb-6">Uredi zadatak</h1>
                 
                 <div className="flex flex-col space-y-4">
                     {/* Naziv */}
@@ -70,8 +71,8 @@ const AddTask = ({ onClose, onSave, partners }) => {
                     </div>
 
                     {/* Kategorija i Datum */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="min-w-0">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
                             <label className="block text-sm font-semibold text-gray-600 mb-1.5">Kategorija*</label>
                             <select
                                 name="task_category"
@@ -97,7 +98,7 @@ const AddTask = ({ onClose, onSave, partners }) => {
                                 min={new Date().toISOString().split('T')[0]}
                                 value={taskData.task_due_date}
                                 onChange={handleChange}
-                                className="w-full h-12 bg-white border box-border border-gray-200 rounded-xl px-4 focus:ring-2 focus:ring-[#B8926A]/20 focus:border-[#B8926A] transition outline-hidden text-gray-700"
+                                className="w-full h-12 bg-white border border-gray-200 rounded-xl px-4 focus:ring-2 focus:ring-[#B8926A]/20 focus:border-[#B8926A] transition outline-hidden text-gray-700"
                                 required
                             />
                         </div>
@@ -142,4 +143,4 @@ const AddTask = ({ onClose, onSave, partners }) => {
     );
 }
 
-export default AddTask;
+export default EditTask;

@@ -90,6 +90,9 @@ class TaskModel(BaseModel):
     task_due_date: Optional[str] = None
     task_is_completed: bool = False
     task_notes: Optional[str] = None
+    
+class StatusUpdateModel(BaseModel):
+    is_completed: bool
 
 # --- Rute ---
 @app.post("/api/login")
@@ -304,8 +307,15 @@ def get_tasks_summary(current_user: dict = Depends(get_current_user)):
 @app.put("/api/tasks/{task_id}")
 def update_task(task_id: int, task_data: TaskModel, current_user: dict = Depends(get_current_user)):
     user_id = current_user.get("sub")
-    query = """ UPDATE tasks SET task_name = %s, owner = %s, category = %s, priority = %s, due_date = %s, is_completed = %s, notes = %s WHERE id = %s AND user_id = %s """
+    query = """ UPDATE tasks SET task_name = %s, owner = %s, category = %s, priority = %s, due_date = %s, is_completed = %s, notes = %s WHERE task_id = %s AND user_id = %s """
     success = executeQuery(query, (task_data.task_name, task_data.task_owner, task_data.task_category, task_data.task_priority, task_data.task_due_date, task_data.task_is_completed, task_data.task_notes, task_id , user_id))
+    return {"message": "Uspješno ažurirano"} if success else HTTPException(status_code=500)
+
+@app.put("/api/tasks/status/{task_id}")
+def update_task_status(task_id: int, status_data: StatusUpdateModel, current_user: dict = Depends(get_current_user)):
+    user_id = current_user.get("sub")
+    query = """ UPDATE tasks SET is_completed = %s WHERE task_id = %s AND user_id = %s """
+    success = executeQuery(query, (status_data.is_completed, task_id , user_id))
     return {"message": "Uspješno ažurirano"} if success else HTTPException(status_code=500)
 
 @app.delete("/api/tasks/{task_id}")

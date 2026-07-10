@@ -6,6 +6,7 @@ import { Calendar, Circle } from 'lucide-react';
 import ProgressBarTask from "../components/progressBarTask";
 import AddTask from "../components/addTask";
 import TaskTableItem from "../components/taskTableItem";
+import EditTask from "../components/editTask";
 
 const Tasks = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -13,6 +14,7 @@ const Tasks = () => {
     const [tasks, setTasks] = useState([]);
     const [partners, setPartners] = useState([]);
     const [tasksSummary, setTasksSummary] = useState({ completed_tasks: 0, incomplete_tasks: 0 });
+    const [selectedCategory, setSelectedCategory] = useState("Sve");
 
     const newTask = async (taskData) => {
         try {
@@ -102,6 +104,69 @@ const Tasks = () => {
         }
     }
 
+    const deleteTask = async (task_id) => {
+        try {
+            const response = await fetch(`/api/tasks/${task_id}`, {
+                method: "DELETE",
+                credentials: "include",
+            });
+
+            if (!response.ok) {
+                throw new Error("Greška prilikom brisanja zadatka");
+            }
+
+            getTasks();
+            getTasksSummary();
+        } catch (error) {
+            console.error(error);
+            alert("Došlo je do greške prilikom brisanja zadatka.");
+        }
+    }
+
+    const changeTaskStatus = async (task_id, newStatus) => {
+        try {
+            const reponse = await fetch(`/api/tasks/status/${task_id}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                credentials: "include",
+                body: JSON.stringify({ is_completed: newStatus }),
+            });
+            if (!reponse.ok) {
+                throw new Error("Greška prilikom promjene statusa zadatka");
+            }
+            getTasks();
+            getTasksSummary();
+        } catch (error) {
+            console.error(error);
+            alert("Došlo je do greške prilikom promjene statusa zadatka.");
+        }
+    }
+
+    const updateTask = async (task_id, updatedTaskData) => {
+        try {
+            const response = await fetch(`/api/tasks/${task_id}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                credentials: "include",
+                body: JSON.stringify(updatedTaskData),
+            });
+
+            if (!response.ok) {
+                throw new Error("Greška prilikom ažuriranja zadatka");
+            }
+
+            getTasks();
+            getTasksSummary();
+        } catch (error) {
+            console.error(error);
+            alert("Došlo je do greške prilikom ažuriranja zadatka.");
+        }
+    };
+
     useEffect(() => {
         getPartners();
         getTasks();
@@ -117,6 +182,10 @@ const Tasks = () => {
     const completedTasks = tasks?.completed_tasks || 0;
     const incompleteTasks = tasks?.incomplete_tasks || 0;
     const totalTasks = tasks?.total_tasks || 0;
+
+    const filteredTasks = selectedCategory === "Sve"
+     ? tasks
+     : tasks.filter((task) => task.category === selectedCategory);
 
     return (
         <div className="h-dvh w-screen flex overflow-hidden bg-[#fcfbfa] relative">
@@ -213,34 +282,55 @@ const Tasks = () => {
                                 </div>
                             </div>
                         </div>
-                            <div className="flex flex-col rounded-2xl bg-white shadow lg:w-1/3 p-6">
-                            {/* Ovdje idu AI savjeti ovisno o situaciji */}
-
-                            <p className="text-gray-600 text-[12px] lg:text-[16px]">AI savjeti ovisno o situaciji</p>
+                            <div className="flex flex-col rounded-2xl bg-white shadow lg:w-1/3 p-6 h-full">
+                                <p className="text-gray-600 text-[12px] lg:text-[16px]">AI savjeti ovisno o situaciji</p>
                             </div>
-                    </div>
+                        </div>
                     <div className="flex flex-col lg:flex-row gap-6 px-4 md:px-10 lg:px-16 py-4 h-fit pb-24 lg:pb-6">
                         <div className="flex w-full shadow py-4 bg-white rounded-2xl px-6 flex-col gap-5 pt-8 pl-8">
-                            <h2 className='font-bold text-[20px] lg:text-[26px] text-gray-800'>Svi zadaci</h2>
-                            <div className="flex gap-4 items-center">
+                            <h2 className='font-bold text-[26px] lg:text-[26px] text-gray-800'>Svi zadaci</h2>
+                            <div className="grid grid-cols-2 sm:grid-cols-6 md:grid-cols-8 gap-4 items-center">
+                                <button
+                                    onClick={() => setSelectedCategory("Sve")}
+                                    className="px-4 py-2 cursor-pointer bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 transition-all text-sm font-medium text-gray-700"
+                                >
+                                    Sve
+                                </button>
                                 {Array.isArray(tasksSummary) && tasksSummary.map((task) => (
                                     <button 
                                         key={task.category}
-                                        className="px-4 py-2 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 transition-all text-sm font-medium text-gray-700"
+                                        onClick={() => setSelectedCategory(task.category)}
+                                        className="px-4 py-2 cursor-pointer bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 transition-all text-sm font-medium text-gray-700"
                                     >
                                         {task.category}
                                     </button>
                                 ))}
                             </div>
                             <div className="flex flex-col gap-4 mt-4 mb-4">
-                                {Array.isArray(tasks) && tasks.slice(0, 5).map((task) => (
-                                    <TaskTableItem key={task.task_id} task={task} />
+
+                                {Array.isArray(filteredTasks) && filteredTasks.slice(0, 5).map((task) => (
+                                    <TaskTableItem 
+                                    key={task.task_id} 
+                                    task={task} 
+                                    deleteTask={deleteTask} 
+                                    changeTaskStatus={changeTaskStatus}
+                                    updateTask={updateTask}
+                                    partners={partners}
+                                    />
                                 ))}
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+             <button
+                onClick={() => setIsAddTaskOpen(true)}
+                className="lg:hidden fixed bottom-8 right-6 bg-[#B8926A] text-white p-4 rounded-full shadow-lg shadow-[#B8926A]/40 active:scale-95 transition-all duration-200 z-40 flex items-center justify-center cursor-pointer"
+            >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+                </svg>
+            </button>
         </div>
     );
 };
