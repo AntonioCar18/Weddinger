@@ -8,6 +8,7 @@ import AddTable from "../components/addTable";
 import WeddingMap from "../components/mapTables";
 import EditTable from "../components/EditTable";
 import ExportTablesToPDF from "../components/exportPDFTables";
+import { Armchair, Table, Table2 } from "lucide-react";
 
 const SittingSchedule = () => {
     const queryClient = useQueryClient();
@@ -235,6 +236,13 @@ const SittingSchedule = () => {
 
                     <div className="flex-1 overflow-hidden px-4 md:px-10 lg:px-16 py-4 flex flex-col lg:flex-row gap-6 items-stretch h-full pb-24 lg:pb-6">
                         <div className="flex-1 bg-transparent overflow-y-auto border-2 border-dashed border-gray-200/60 rounded-2xl hidden lg:block">
+                            {tables.length === 0 && (
+                                <div className="py-20 flex flex-col items-center justify-center text-center pt-80">
+                                    <Armchair className="w-12 h-12 text-[#B8926A] mb-4" />
+                                    <p className="text-gray-500">Trenutačno nemate dodanih stolova.</p>
+                                    <button onClick={() => setAddTable(true)} className="mt-4 text-[#B8926A] font-bold hover:underline cursor-pointer">Dodajte prvi stol</button>
+                                </div>
+                            )}
                             <WeddingMap
                                 tables={tables}
                                 allGuests={guestSeat}

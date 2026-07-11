@@ -70,7 +70,7 @@ const TaskTableItem = ({ task, deleteTask, changeTaskStatus, updateTask, partner
                 <button
                     onClick={() => setIsEditTaskOpen(true)}
                 >
-                    <Edit2 className="w-5 h-5 text-blue-300 cursor-pointer mr-6"/>
+                    <Edit2 className="w-5 h-5 text-[#B8926A] cursor-pointer mr-6"/>
                 </button>
                 {isEditTaskOpen && (
                     <EditTask

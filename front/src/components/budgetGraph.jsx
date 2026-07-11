@@ -12,7 +12,7 @@ const BudgetGraph = ({ budget, used }) => {
 
     return (
         <div className="flex flex-col p-8 bg-white shadow rounded-xl">
-            <h2 className="text-2xl font-semibold items-center justify-center flex">Pregled stanja budžeta</h2>
+            <h2 className="text-2xl font-bold items-left lg:items-center justify-center flex">Pregled stanja budžeta</h2>
             
             <div className="relative w-full h-75 min-h-75 outline-none">
                 <ResponsiveContainer width="100%" height="100%" className="outline-none">

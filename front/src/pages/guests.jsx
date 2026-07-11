@@ -7,6 +7,7 @@ import ExportGuestsToPDF from "../components/exportPDFGuests";
 import EditGuest from "../components/editGuest";
 import Sidebar from "../components/sidebar";
 import { useQuery } from '@tanstack/react-query';
+import { UsersRound } from "lucide-react";
 
 const Guests = () => {
     const navigate = useNavigate();
@@ -32,9 +33,10 @@ const Guests = () => {
             if (!response.ok) throw new Error("Greška");
             return response.json();
         },
-        staleTime: 60000, // Podaci su "svježi" 60 sekundi - neće ih ponovo tražiti dokle god su svježi
+        staleTime: 5000, // Podaci su "svježi" 5 sekundi - neće ih ponovo tražiti dokle god su svježi
         refetchInterval: 10000, // Zadržavamo tvoj interval od 10s u pozadini
     });
+    
 
     useEffect(() => {
         setCurrentPage(1);
