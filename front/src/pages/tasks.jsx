@@ -1,14 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Calendar, Circle, Star, Sparkles, Compass } from 'lucide-react';
 import weddingerLogo from "../assets/logo.png";
 import Sidebar from "../components/sidebar";
 import ProgressBarTask from "../components/progressBarTask";
 import AddTask from "../components/addTask";
 import TaskTableItem from "../components/taskTableItem";
-import EditTask from "../components/editTask";
 import { allSuggestions } from "../components/suggestions";
-import { useQueryClient } from "@tanstack/react-query";
-import { useQuery } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 
 const SuggestionCard = ({ suggestion }) => (
     <div className="bg-white/10 backdrop-blur-md border border-white/20 p-5 rounded-2xl flex items-center gap-4 hover:bg-white/20 transition-all duration-300">
@@ -23,12 +21,13 @@ const SuggestionCard = ({ suggestion }) => (
 const Tasks = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
-    const [tasks, setTasks] = useState([]);
     const [partners, setPartners] = useState([]);
     const [tasksSummary, setTasksSummary] = useState({ completed_tasks: 0, incomplete_tasks: 0 });
     const [selectedCategory, setSelectedCategory] = useState("Sve");
-    const queryClient = useQueryClient();
     const [tables, setTables] = useState([]);
+    const [activeSuggestions, setActiveSuggestions] = useState([]);
+    const queryClient = useQueryClient();
+
     const { data: guestsData } = useQuery({
         queryKey: ['guests'],
         queryFn: async () => {
@@ -36,69 +35,47 @@ const Tasks = () => {
             if (!response.ok) throw new Error("Greška pri dohvatu gostiju");
             return response.json();
         },
-        staleTime: 6000, // Podaci su svježi 1 minutu
+        staleTime: 10000,
     });
+
     const { data: queryData } = useQuery({
         queryKey: ['budget'],
         queryFn: async () => {
-            const response = await fetch("/api/budget", {
-                method: "GET",
-                credentials: 'include'
-            });
+            const response = await fetch("/api/budget", { method: "GET", credentials: 'include' });
             if (!response.ok) throw new Error("Server error");
             return response.json();
         },
-        refetchInterval: 6000,
+        refetchInterval: 10000,
     });
-    
+
+    const { data: tasksData, isLoading } = useQuery({
+        queryKey: ['tasks'],
+        queryFn: async () => {
+            const response = await fetch("/api/tasks", { method: "GET", credentials: "include" });
+            if (!response.ok) throw new Error("Greška pri dohvatu zadataka");
+            const result = await response.json();
+            return result.data;
+        },
+        staleTime: 10000,
+        placeholderData: (previousData) => previousData,
+    });
+
+    const tasks = tasksData || [];
     const budgetData = queryData?.data.length || 0;
     const totalGuests = (guestsData?.length || 0) + (guestsData?.filter(guest => guest.plus_one === true).length || 0);
-    const guestCount = guestsData?.length || 0;
-    const [activeSuggestions, setActiveSuggestions] = useState([]);
 
-    const newTask = async (taskData) => {
-        try {
-            const response = await fetch("/api/tasks", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify(taskData),
-            });
-            if (!response.ok) throw new Error("Greška prilikom dodavanja zadatka");
-            setIsAddTaskOpen(false);
-            getTasks();
-            getTasksSummary();
-        } catch (error) {
-            console.error(error);
-            alert("Došlo je do greške prilikom dodavanja zadatka.");
-        }
-    };
+    useEffect(() => {
+        if (isLoading && tasks.length === 0) return;
+        
+        const dataForSuggestions = { tasks, guests: totalGuests, budget: budgetData, tables: tables.length || 0 };
+        const available = allSuggestions.filter(s => s.condition(dataForSuggestions));
+        const newSuggestions = available.slice(0, 1);
 
-    const getPartners = async () => {
-        try {
-            const response = await fetch("/api/me", { method: "GET", credentials: "include" });
-            if (!response.ok) throw new Error("Greška prilikom dohvaćanja partnera");
-            const data = await response.json();
-            if (data.user) {
-                setPartners([data.user.partner_one, data.user.partner_two]);
-            }
-        } catch (error) {
-            console.error(error);
-            alert("Došlo je do greške prilikom dohvaćanja partnera.");
-        }
-    };
-
-    const getTasks = async () => {
-        try {
-            const response = await fetch("/api/tasks", { method: "GET", credentials: "include" });
-            if (!response.ok) throw new Error("Greška prilikom dohvaćanja zadataka");
-            const result = await response.json();
-            setTasks(result.data);
-        } catch (error) {
-            console.error(error);
-            alert("Došlo je do greške prilikom dohvaćanja zadataka.");
-        }
-    }
+        setActiveSuggestions(prev => {
+            if (JSON.stringify(prev) === JSON.stringify(newSuggestions)) return prev;
+            return newSuggestions;
+        });
+    }, [tasks, totalGuests, budgetData, tables, isLoading]);
 
     const getTasksSummary = async () => {
         try {
@@ -106,109 +83,60 @@ const Tasks = () => {
             if (!response.ok) throw new Error("Greška prilikom dohvaćanja zadataka");
             const data = await response.json();
             setTasksSummary(data.data || []);
-        } catch (error) {
-            console.error(error);
-            alert("Došlo je do greške prilikom dohvaćanja zadataka.");
-        }
-    }
-
-    const deleteTask = async (task_id) => {
-        try {
-            const response = await fetch(`/api/tasks/${task_id}`, { method: "DELETE", credentials: "include" });
-            if (!response.ok) throw new Error("Greška prilikom brisanja zadatka");
-            getTasks();
-            getTasksSummary();
-        } catch (error) {
-            console.error(error);
-            alert("Došlo je do greške prilikom brisanja zadatka.");
-        }
-    }
-
-    const changeTaskStatus = async (task_id, newStatus) => {
-        try {
-            const response = await fetch(`/api/tasks/status/${task_id}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify({ is_completed: newStatus }),
-            });
-            if (!response.ok) throw new Error("Greška prilikom promjene statusa zadatka");
-            getTasks();
-            getTasksSummary();
-        } catch (error) {
-            console.error(error);
-            alert("Došlo je do greške prilikom promjene statusa zadatka.");
-        }
-    }
-
-    const updateTask = async (task_id, updatedTaskData) => {
-        try {
-            const response = await fetch(`/api/tasks/${task_id}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify(updatedTaskData),
-            });
-            if (!response.ok) throw new Error("Greška prilikom ažuriranja zadatka");
-            getTasks();
-            getTasksSummary();
-        } catch (error) {
-            console.error(error);
-            alert("Došlo je do greške prilikom ažuriranja zadatka.");
-        }
+        } catch (error) { console.error(error); }
     };
 
-    const refreshSuggestions = (currentTasks) => {
-
-        const tableCount = tables.length || 0;
-
-        const dataForSuggestions = {
-            tasks: currentTasks,
-            guests: totalGuests,
-            budget: budgetData,
-            tables: tableCount
-        };
-        
-        const available = allSuggestions.filter(s => s.condition(dataForSuggestions));
-        const shuffled = [...available].sort(() => 0.5 - Math.random());
-        setActiveSuggestions(shuffled.slice(0, 2));
+    const getPartners = async () => {
+        try {
+            const response = await fetch("/api/me", { method: "GET", credentials: "include" });
+            const data = await response.json();
+            if (data.user) setPartners([data.user.partner_one, data.user.partner_two]);
+        } catch (error) { console.error(error); }
     };
 
     const fetchTables = async () => {
         try {
             const response = await fetch("/api/tables", { method: "GET", credentials: "include" });
-            const tables_data = await response.json();
-            setTables(tables_data);
-        } catch (error) {
-            console.error("Greška pri učitavanju podataka:", error);
-        }
+            setTables(await response.json());
+        } catch (error) { console.error("Greška pri učitavanju podataka:", error); }
     };
 
     useEffect(() => {
         getPartners();
-        getTasks();
         getTasksSummary();
         fetchTables();
-        const interval = setInterval(getTasks, 10000);
         const summaryInterval = setInterval(getTasksSummary, 10000);
-        return () => {
-            clearInterval(interval);
-            clearInterval(summaryInterval);
-        };
+        return () => clearInterval(summaryInterval);
     }, []);
 
-    useEffect(() => {
-        const guestData = queryClient.getQueryData(['guests']);
-        const budgetData = queryClient.getQueryData(['budget']);
-        console.log("Što kaže cache za goste?", guestData);
-        console.log("Što kaže cache za budžet?", budgetData);
-        console.log("Što kaže sustav za stolove?", tables);
-        refreshSuggestions(tasks);
-    }, [tasks, guestCount, budgetData, tables]);
+    const newTask = async (taskData) => {
+        const response = await fetch("/api/tasks", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify(taskData) });
+        if (response.ok) {
+            setIsAddTaskOpen(false);
+            getTasksSummary();
+            queryClient.invalidateQueries(['tasks']);
+        }
+    };
 
-    const filteredTasks = selectedCategory === "Sve"
-        ? tasks
-        : tasks.filter((task) => task.category === selectedCategory);
+    const deleteTask = async (task_id) => {
+        await fetch(`/api/tasks/${task_id}`, { method: "DELETE", credentials: "include" });
+        getTasksSummary();
+        queryClient.invalidateQueries(['tasks']);
+    };
+
+    const changeTaskStatus = async (task_id, newStatus) => {
+        await fetch(`/api/tasks/status/${task_id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ is_completed: newStatus }) });
+        getTasksSummary();
+        queryClient.invalidateQueries(['tasks']);
+    };
+
+    const updateTask = async (task_id, updatedTaskData) => {
+        await fetch(`/api/tasks/${task_id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify(updatedTaskData) });
+        getTasksSummary();
+        queryClient.invalidateQueries(['tasks']);
+    };
+
+    const filteredTasks = selectedCategory === "Sve" ? tasks : tasks.filter((task) => task.category === selectedCategory);
 
     return (
         <div className="h-dvh w-screen flex bg-[#fcfbfa] relative">
@@ -239,7 +167,7 @@ const Tasks = () => {
                         </button>
                     </div>
 
-                    <div className="px-4 md:px-10 lg:px-16 py-4 flex flex-col lg:flex-row gap-6 h-fit pb-6">
+                    <div className="px-4 md:px-10 lg:px-16 py-4 flex flex-col lg:flex-row gap-8 lg:gap-6 h-fit pb-6 pt-6">
                         <div className="flex flex-col rounded-2xl bg-white shadow lg:w-2/3 p-8">
                             <h2 className='font-bold text-[20px] lg:text-[26px] text-gray-800 mb-6'>Pregled obavljenih zadataka</h2>
                             <div className="flex flex-col gap-6 text-gray-400">
@@ -260,19 +188,24 @@ const Tasks = () => {
                                 </div>
                                 <h2 className='font-bold text-lg'>Naše sugestije</h2>
                             </div>
-
                             <div className="flex flex-col gap-3 flex-1">
-                                {activeSuggestions.map((suggestion, index) => (
-                                    <SuggestionCard key={index} suggestion={suggestion} />
-                                ))}
-                                {activeSuggestions.length === 0 && (
+                                {tasksData ? (
+                                    activeSuggestions.map((suggestion, index) => (
+                                        <SuggestionCard key={index} suggestion={suggestion} />
+                                    ))
+                                ) : (
+                                    // Možeš staviti neki "skeleton" ili ništa dok se učitava
+                                    <div className="animate-pulse bg-white/10 h-20 rounded-2xl w-full"></div>
+                                )}
+                                
+                                {tasksData && activeSuggestions.length === 0 && (
                                     <p className="text-white/70 text-sm italic">Trenutačno nema novih savjeta. Odlično napredujete!</p>
                                 )}
                             </div>
                         </div>
                     </div>
 
-                    <div className="flex w-full flex-col gap-8 px-4 md:px-10 lg:px-16 py-8">
+                    <div className="flex w-full flex-col gap-8 px-4 md:px-10 lg:px-16 py-4">
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 ml-2 md:ml-0">
                             <div>
                                 <h2 className='text-3xl font-extrabold text-gray-900 tracking-tight'>Vaši zadaci</h2>
@@ -304,13 +237,8 @@ const Tasks = () => {
                     </div>
                 </div>
             </div>
-            <button
-                onClick={() => setIsAddTaskOpen(true)}
-                className="lg:hidden fixed bottom-8 right-6 bg-[#B8926A] text-white p-4 rounded-full shadow-lg shadow-[#B8926A]/40 active:scale-95 transition-all duration-200 z-40 flex items-center justify-center cursor-pointer"
-            >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
-                </svg>
+            <button onClick={() => setIsAddTaskOpen(true)} className="lg:hidden fixed bottom-8 right-6 bg-[#B8926A] text-white p-4 rounded-full shadow-lg shadow-[#B8926A]/40 active:scale-95 transition-all duration-200 z-40 flex items-center justify-center cursor-pointer">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" /></svg>
             </button>
             {isAddTaskOpen && <AddTask onSave={newTask} onClose={() => setIsAddTaskOpen(false)} partners={partners} />}
         </div>
