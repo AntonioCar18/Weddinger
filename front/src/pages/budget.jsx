@@ -86,12 +86,12 @@ const Budget = () => {
     return hasNotes ? 5 : 7;
 };
 
-const itemsPerPage = getVisibleItems(); // Dinamički određujemo broj
+    const itemsPerPage = getVisibleItems(); // Dinamički određujemo broj
 
-const indexLastItem = currentPage * itemsPerPage;
-const indexFirstItem = indexLastItem - itemsPerPage;
-const currentItems = filteredItems.slice(indexFirstItem, indexLastItem);
-const totalPages = Math.max(1, Math.ceil(filteredItems.length / itemsPerPage));
+    const indexLastItem = currentPage * itemsPerPage;
+    const indexFirstItem = indexLastItem - itemsPerPage;
+    const currentItems = filteredItems.slice(indexFirstItem, indexLastItem);
+    const totalPages = Math.max(1, Math.ceil(filteredItems.length / itemsPerPage));
 
     const used_budget = items.total_paid_so_far || 0;
     const total_budget = items.total_budget_plan || 0;
@@ -116,11 +116,11 @@ const totalPages = Math.max(1, Math.ceil(filteredItems.length / itemsPerPage));
             console.error("Server je vratio grešku:", response.statusText);
             alert("Došlo je do greške prilikom brisanja.");
         }
-    } catch (error) {
-        console.error("Greška pri brisanju:", error);
-        alert("Problem s povezivanjem na poslužitelj.");
-    }
-};
+        } catch (error) {
+            console.error("Greška pri brisanju:", error);
+            alert("Problem s povezivanjem na poslužitelj.");
+        }
+    };
 
     return (
         <div className="h-dvh w-screen flex overflow-hidden bg-[#fcfbfa] relative">

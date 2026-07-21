@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { Calendar, Circle, Star, Sparkles, Compass } from 'lucide-react';
+import { Calendar, Circle, Star, Sparkles, Compass, House } from 'lucide-react';
+import { ListChecks, Flower2, Camera, Utensils, Music4, Shirt, BookAIcon } from 'lucide-react';
 import weddingerLogo from "../assets/logo.png";
 import Sidebar from "../components/sidebar";
 import ProgressBarTask from "../components/progressBarTask";
@@ -7,6 +8,8 @@ import AddTask from "../components/addTask";
 import TaskTableItem from "../components/taskTableItem";
 import { allSuggestions } from "../components/suggestions";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
+import TasksGraph from "../components/tasksGraph";
+
 
 const SuggestionCard = ({ suggestion }) => (
     <div className="bg-white/10 backdrop-blur-md border border-white/20 p-5 rounded-2xl flex items-center gap-4 hover:bg-white/20 transition-all duration-300">
@@ -22,7 +25,7 @@ const Tasks = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
     const [partners, setPartners] = useState([]);
-    const [tasksSummary, setTasksSummary] = useState({ completed_tasks: 0, incomplete_tasks: 0 });
+    const [tasksSummary, setTasksSummary] = useState({ data: [], total_tasks: 0,completed_tasks: 0, incomplete_tasks: 0 });
     const [selectedCategory, setSelectedCategory] = useState("Sve");
     const [tables, setTables] = useState([]);
     const [activeSuggestions, setActiveSuggestions] = useState([]);
@@ -80,9 +83,9 @@ const Tasks = () => {
     const getTasksSummary = async () => {
         try {
             const response = await fetch("/api/tasks/summary", { method: "GET", credentials: "include" });
-            if (!response.ok) throw new Error("Greška prilikom dohvaćanja zadataka");
+            if (!response.ok) throw new Error("Greška prilikom dohvaćanja ukupnog pregleda zadataka");
             const data = await response.json();
-            setTasksSummary(data.data || []);
+            setTasksSummary(data || { data: [], total_tasks: 0, total_completed_tasks: 0, total_incomplete_tasks: 0 });
         } catch (error) { console.error(error); }
     };
 
@@ -138,6 +141,25 @@ const Tasks = () => {
 
     const filteredTasks = selectedCategory === "Sve" ? tasks : tasks.filter((task) => task.category === selectedCategory);
 
+    const getCategoryIcon = (category) => {
+        switch (category) {
+            case "Prostor":
+                return House;
+            case "Dekoracije":
+                return Flower2;
+            case "Ugostiteljstvo":
+                return Utensils;
+            case "Glazba":
+                return Music4;
+            case "Administracija":
+                return BookAIcon;
+            case "Ostalo":
+                return Compass;
+            default:
+                return null;
+        }
+    }
+
     return (
         <div className="h-dvh w-screen flex bg-[#fcfbfa] relative">
             {isSidebarOpen && <div className="fixed inset-0 bg-black/40 backdrop-blur-xs z-30 lg:hidden" onClick={() => setIsSidebarOpen(false)} />}
@@ -168,20 +190,39 @@ const Tasks = () => {
                     </div>
 
                     <div className="px-4 md:px-10 lg:px-16 py-4 flex flex-col lg:flex-row gap-8 lg:gap-6 h-fit pb-6 pt-6">
-                        <div className="flex flex-col rounded-2xl bg-white shadow lg:w-2/3 p-8">
-                            <h2 className='font-bold text-[20px] lg:text-[26px] text-gray-800 mb-6'>Pregled obavljenih zadataka</h2>
-                            <div className="flex flex-col gap-6 text-gray-400">
+                        
+                        <div className="flex flex-col rounded-2xl bg-white border border-[#efe9e0] justify-center shadow-sm hover:shadow-xl transition-shadow duration-200 lg:w-1/3 p-8">
+                            <div className="flex items-center gap-3">
+                                <TasksGraph totalTasks={tasksSummary.total_tasks} completedTasks={tasksSummary.total_completed_tasks}/>
+                            </div>
+                        </div>
+                        
+                        <div className="flex flex-col rounded-2xl bg-white border border-[#efe9e0] shadow-sm hover:shadow-xl transition-shadow duration-200 lg:w-1/3 p-8">
+                            <h2 className='font-display text-xl text-gray-900 mb-7 font-bold'>Pregled po kategorijama</h2>
+                            <div className="flex flex-col gap-4">
                                 {tasks.length === 0 ? (
-                                    <p>Trenutačno nemate zadataka prema kojima možete pratiti napredak.</p>
+                                    <div className="flex flex-col items-center text-center py-10">
+                                        <div className="w-12 h-12 rounded-full bg-[#B8926A]/10 flex items-center justify-center mb-3">
+                                            <svg className="w-6 h-6 text-[#B8926A]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                        </div>
+                                        <p className="text-[#8a8378]">Trenutačno nemate zadataka prema kojima možete pratiti napredak.</p>
+                                    </div>
                                 ) : (
-                                    Array.isArray(tasksSummary) && tasksSummary.map((task) => (
-                                        <ProgressBarTask key={task.category} category={task.category} done={task.completed_tasks} total={task.total_tasks} progress={((task.completed_tasks / task.total_tasks) * 100).toFixed(2)} />
+                                    Array.isArray(tasksSummary.data) && tasksSummary.data.map((task) => (
+                                        <ProgressBarTask
+                                            key={task.category}
+                                            icon_category={getCategoryIcon(task.category)}
+                                            category={task.category}
+                                            done={task.completed_tasks}
+                                            total={task.total_tasks}
+                                            progress={((task.completed_tasks / task.total_tasks) * 100).toFixed(2)}
+                                        />
                                     ))
                                 )}
                             </div>
                         </div>
                         
-                        <div className="bg-[#B8926A] flex flex-col rounded-2xl shadow-lg lg:w-1/3 p-6 text-white h-full">
+                        <div className="bg-linear-to-r from-[#c39d76] to-[#8B6B47] flex flex-col rounded-2xl shadow-xl lg:w-1/3 p-6 text-white h-full">
                             <div className="flex gap-3 items-center mb-6">
                                 <div className="p-2 bg-white/20 rounded-lg">
                                     <Sparkles className="w-5 h-5 text-white" />
@@ -211,9 +252,9 @@ const Tasks = () => {
                                 <h2 className='text-3xl font-extrabold text-gray-900 tracking-tight'>Vaši zadaci</h2>
                             </div>
                             <div className="flex flex-wrap gap-2">
-                                <button onClick={() => setSelectedCategory("Sve")} className={`px-5 py-2 rounded-full text-sm font-semibold transition-all cursor-pointer ${selectedCategory === "Sve" ? "bg-[#B8926A] text-white shadow-md" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>Sve</button>
-                                {Array.isArray(tasksSummary) && tasksSummary.map((item) => (
-                                    <button key={item.category} onClick={() => setSelectedCategory(item.category)} className={`px-5 py-2 rounded-full text-sm font-semibold transition-all cursor-pointer ${selectedCategory === item.category ? "bg-[#B8926A] text-white shadow-md" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>{item.category}</button>
+                                <button onClick={() => setSelectedCategory("Sve")} className={`px-5 py-2 rounded-full text-sm font-semibold transition-all cursor-pointer ${selectedCategory === "Sve" ? "bg-linear-to-r from-[#c39d76] to-[#8B6B47] text-white shadow-md" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>Sve</button>
+                                {Array.isArray(tasksSummary.data) && tasksSummary.data.map((item) => (
+                                    <button key={item.category} onClick={() => setSelectedCategory(item.category)} className={`px-5 py-2 rounded-full text-sm font-semibold transition-all cursor-pointer ${selectedCategory === item.category ? "bg-linear-to-r from-[#c39d76] to-[#8B6B47] text-white shadow-md" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>{item.category}</button>
                                 ))}
                             </div>
                         </div>
