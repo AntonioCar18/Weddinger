@@ -322,3 +322,18 @@ def update_task_status(task_id: int, status_data: StatusUpdateModel, current_use
 def delete_task(task_id: int, current_user: dict = Depends(get_current_user)):
     success = executeQuery("DELETE FROM tasks WHERE task_id = %s AND user_id = %s;", (task_id, current_user.get("sub")))
     return {"message": "Uspješno obrisano"} if success else HTTPException(status_code=500)
+
+
+#Partneri
+
+@app.get("/api/partners")
+def get_partners():
+    partners = takeFromBase("SELECT * FROM partners ORDER BY id ASC;")
+    return {
+        "data": partners if partners is not None else [],
+        "total_partners": len(partners) if partners else 0,
+        "foto_video_partners": len([p for p in partners if p['partner_category'] == 'Fotograf/Videograf']) if partners else 0,
+        "catering_partners": len([p for p in partners if p['partner_category'] == 'Catering/Vjenčanje']) if partners else 0,
+        "flower_partners": len([p for p in partners if p['partner_category'] == 'Cvijeće/Dekoracije']) if partners else 0,
+        "music_partners": len([p for p in partners if p['partner_category'] == 'Glazba/Pratnja/DJ']) if partners else 0
+    }
