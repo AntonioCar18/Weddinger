@@ -7,6 +7,7 @@ import ProtectedRoute from "./components/protected_route";
 import SittingSchedule from "./pages/sitting_schedule";
 import Budget from "./pages/budget";
 import Tasks from "./pages/tasks";
+import Partners from "./pages/partners";
 
 // 2. Kreiraj instancu klijenta izvan komponente da se ne re-kreira kod svakog rendera
 export const queryClient = new QueryClient({
@@ -44,6 +45,7 @@ function App() {
             <Route path="/sitting-schedule" element={<SittingSchedule />} />
             <Route path="/budget" element={<Budget />} />
             <Route path="/tasks" element={<Tasks />} />
+            <Route path="/partners" element={<Partners />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

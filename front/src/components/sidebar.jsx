@@ -92,7 +92,7 @@ useEffect(() => {
         },
         {
             name: "Partneri",
-            path: "/vendors",
+            path: "/partners",
             icon: (
                 <path d="M3 7h18M3 12h18M3 17h18" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
             )

@@ -204,7 +204,14 @@ const Guests = () => {
             </div>
             <Sidebar activeTab="Gosti"/>
         </div>
-
+        <button
+                onClick={() => setAddItem(true)}
+                className="lg:hidden fixed bottom-8 right-6 bg-[#B8926A] text-white p-4 rounded-full shadow-lg shadow-[#B8926A]/40 active:scale-95 transition-all duration-200 z-40 flex items-center justify-center cursor-pointer"
+            >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+                </svg>
+            </button>
         <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
             <div className="flex px-4 md:px-10 lg:px-16 pt-6 lg:pt-12 pb-4 items-center justify-between w-full border-b lg:border-none border-gray-100 bg-white lg:bg-transparent">
                 <button 
@@ -471,15 +478,6 @@ const Guests = () => {
                         ))
                     )}
                 </div>
-
-                <button
-                        onClick={() => setShowAddPage(true)}
-                        className="lg:hidden fixed bottom-2 right-6 bg-[#B8926A] text-white p-4 rounded-full shadow-lg shadow-[#B8926A]/40 active:scale-95 transition-all duration-200 z-40 flex items-center justify-center cursor-pointer"
-                    >
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
-                        </svg>
-                    </button>
 
                 {totalPages > 1 && (
                     <div className="flex justify-between items-center bg-white border border-gray-100 rounded-2xl px-6 py-4 shadow-xs mt-4 pb-6">

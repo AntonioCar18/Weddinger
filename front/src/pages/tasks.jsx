@@ -25,7 +25,6 @@ const Tasks = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
     const [partners, setPartners] = useState([]);
-    const [tasksSummary, setTasksSummary] = useState({ data: [], total_tasks: 0,completed_tasks: 0, incomplete_tasks: 0 });
     const [selectedCategory, setSelectedCategory] = useState("Sve");
     const [tables, setTables] = useState([]);
     const [activeSuggestions, setActiveSuggestions] = useState([]);
@@ -80,14 +79,16 @@ const Tasks = () => {
         });
     }, [tasks, totalGuests, budgetData, tables, isLoading]);
 
-    const getTasksSummary = async () => {
-        try {
+    const { data: tasksSummary = { data: [], total_tasks: 0, total_completed_tasks: 0, total_incomplete_tasks: 0 } } = useQuery({
+        queryKey: ['tasksSummary'],
+        queryFn: async () => {
             const response = await fetch("/api/tasks/summary", { method: "GET", credentials: "include" });
             if (!response.ok) throw new Error("Greška prilikom dohvaćanja ukupnog pregleda zadataka");
-            const data = await response.json();
-            setTasksSummary(data || { data: [], total_tasks: 0, total_completed_tasks: 0, total_incomplete_tasks: 0 });
-        } catch (error) { console.error(error); }
-    };
+            return response.json();
+        },
+        staleTime: 5000,
+        refetchInterval: 10000,
+    });
 
     const getPartners = async () => {
         try {
@@ -106,36 +107,33 @@ const Tasks = () => {
 
     useEffect(() => {
         getPartners();
-        getTasksSummary();
         fetchTables();
-        const summaryInterval = setInterval(getTasksSummary, 10000);
-        return () => clearInterval(summaryInterval);
     }, []);
 
     const newTask = async (taskData) => {
         const response = await fetch("/api/tasks", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify(taskData) });
         if (response.ok) {
             setIsAddTaskOpen(false);
-            getTasksSummary();
+            queryClient.invalidateQueries(['tasksSummary']);
             queryClient.invalidateQueries(['tasks']);
         }
     };
 
     const deleteTask = async (task_id) => {
         await fetch(`/api/tasks/${task_id}`, { method: "DELETE", credentials: "include" });
-        getTasksSummary();
+        queryClient.invalidateQueries(['tasksSummary']);
         queryClient.invalidateQueries(['tasks']);
     };
 
     const changeTaskStatus = async (task_id, newStatus) => {
         await fetch(`/api/tasks/status/${task_id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ is_completed: newStatus }) });
-        getTasksSummary();
+        queryClient.invalidateQueries(['tasksSummary']);
         queryClient.invalidateQueries(['tasks']);
     };
 
     const updateTask = async (task_id, updatedTaskData) => {
         await fetch(`/api/tasks/${task_id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify(updatedTaskData) });
-        getTasksSummary();
+        queryClient.invalidateQueries(['tasksSummary']);
         queryClient.invalidateQueries(['tasks']);
     };
 
@@ -199,9 +197,9 @@ const Tasks = () => {
                         
                         <div className="flex flex-col rounded-2xl bg-white border border-[#efe9e0] shadow-sm hover:shadow-xl transition-shadow duration-200 lg:w-1/3 p-8">
                             <h2 className='font-display text-xl text-gray-900 mb-7 font-bold'>Pregled po kategorijama</h2>
-                            <div className="flex flex-col gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
                                 {tasks.length === 0 ? (
-                                    <div className="flex flex-col items-center text-center py-10">
+                                    <div className="sm:col-span-2 flex flex-col items-center text-center py-10">
                                         <div className="w-12 h-12 rounded-full bg-[#B8926A]/10 flex items-center justify-center mb-3">
                                             <svg className="w-6 h-6 text-[#B8926A]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                         </div>
@@ -235,7 +233,6 @@ const Tasks = () => {
                                         <SuggestionCard key={index} suggestion={suggestion} />
                                     ))
                                 ) : (
-                                    // Možeš staviti neki "skeleton" ili ništa dok se učitava
                                     <div className="animate-pulse bg-white/10 h-20 rounded-2xl w-full"></div>
                                 )}
                                 

@@ -1,20 +1,16 @@
 const ProgressBarTask = ({ icon_category, category, done, total, progress }) => {
-    
+
     const Icon = icon_category;
-    
+
     return (
         <div className="w-full">
-            <div className="flex justify-between items-center mb-2">
-                <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-2 mb-1">
-                        <div className="w-4 h-4 flex justify-center rounded-full">
-                            {Icon ? <Icon className="w-4 h-4 text-[#8B6B47]" /> : null}
-                        </div>
-                    </div>
-                    <h3 className="font-semibold text-[16px] text-gray-800 mb-1">{category}</h3>
+            <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                    {Icon && <Icon className="w-4 h-4 text-[#8B6B47] shrink-0" />}
+                    <h3 className="font-semibold text-[16px] text-gray-800 truncate">{category}</h3>
                 </div>
-                <p className="text-sm text-[#8a8378] font-medium">
-                    {progress}% <span className="text-[#a39d90]">({done}/{total})</span>
+                <p className="text-sm text-[#8a8378] font-medium whitespace-nowrap shrink-0">
+                    {Math.round(progress)}% <span className="text-[#a39d90] sm:hidden">({done}/{total})</span>
                 </p>
             </div>
 
