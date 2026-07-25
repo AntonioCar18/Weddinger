@@ -1,6 +1,6 @@
 import { BadgeCheck, Phone, Star, MapPin } from "lucide-react";
 
-const PartnersBlockPresentation = ({ icon_partners: Icon, title, desc, location, category }) => {
+const PartnersBlockPresentation = ({ icon_partners: Icon, title, desc, location, category, social, phone }) => {
     return (
         <div className="bg-white shadow rounded-2xl overflow-hidden space-between flex flex-col">
             <div className="relative w-full aspect-4/3 bg-[#B8926A1A] overflow-hidden">
@@ -32,12 +32,14 @@ const PartnersBlockPresentation = ({ icon_partners: Icon, title, desc, location,
             </div>
 
             <div className="gap-2 p-5 bg-white flex flex-col lg:flex-row items-center justify-between border-t border-gray-100">
-                <button className="cursor-pointer flex items-center gap-2 justify-center lg:justify-start rounded-2xl border border-gray-200 w-full lg:w-fit py-3 px-3 lg:py-3 text-sm text-gray-700 font-semibold">
+                <button className="cursor-pointer flex items-center gap-2 justify-center lg:justify-start rounded-2xl border border-gray-200 w-full lg:w-fit py-3 px-3 lg:py-3 text-sm text-gray-700 font-semibold"
+                    onClick={() => window.location.href = `tel:${phone}`}
+                >
                     <Phone className="w-6 h-6 text-gray-700 shrink-0" />
                 </button>
                 <div className="bg-[#B8926A] w-full justify-center flex items-center gap-2 rounded-2xl border border-gray-200 px-3 py-3 text-sm text-gray-700 font-semibold">
                     <button className="cursor-pointer w-full text-center text-sm font-semibold text-white transition-colors">
-                        Posjetite stranicu
+                        <a href={social || "#"}>Posjetite stranicu</a>
                     </button>
                 </div>
             </div>
