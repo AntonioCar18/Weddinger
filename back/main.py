@@ -94,6 +94,12 @@ class TaskModel(BaseModel):
 class StatusUpdateModel(BaseModel):
     is_completed: bool
 
+class UpdateUserModel(BaseModel):
+    partner_one: str
+    partner_two: str
+    wedding_date: Optional[str] = None
+    wedding_location: Optional[str] = None
+
 # --- Rute ---
 @app.post("/api/login")
 def login(login_data: LoginModel, response: Response):
@@ -113,11 +119,20 @@ def logout(response: Response):
 @app.get("/api/me")
 def get_me(current_user: dict = Depends(get_current_user)):
     user_id = current_user.get("sub")
-    user = takeFromBase("SELECT partner_one, partner_two FROM users WHERE id = %s;", (user_id,))
+    user = takeFromBase("SELECT partner_one, partner_two, wedding_date, wedding_location FROM users WHERE id = %s;", (user_id,))
     if not user:
         raise HTTPException(status_code=404, detail="Korisnik nije nađen")
     return {"user": user[0]}
-    
+
+@app.put("/api/me")
+def update_me(update_data: UpdateUserModel, current_user: dict = Depends(get_current_user)):
+    user_id = current_user.get("sub")
+    query = "UPDATE users SET partner_one = %s, partner_two = %s, wedding_date = %s, wedding_location = %s WHERE id = %s;"
+    success = executeQuery(query, (update_data.partner_one, update_data.partner_two, update_data.wedding_date, update_data.wedding_location, user_id))
+    if success:
+        return {"message": "Uspješno ažurirano"}
+    else:
+        raise HTTPException(status_code=500, detail="Greška pri ažuriranju")
 
 @app.post("/api/register")
 def register(register_data: RegisterModel):

@@ -58,7 +58,8 @@ const Tasks = () => {
             const result = await response.json();
             return result.data;
         },
-        staleTime: 10000,
+        staleTime: 3000,
+        refetchInterval: 3000,
         placeholderData: (previousData) => previousData,
     });
 
@@ -86,8 +87,8 @@ const Tasks = () => {
             if (!response.ok) throw new Error("Greška prilikom dohvaćanja ukupnog pregleda zadataka");
             return response.json();
         },
-        staleTime: 5000,
-        refetchInterval: 10000,
+        staleTime: 3000,
+        refetchInterval: 3000,
     });
 
     const getPartners = async () => {

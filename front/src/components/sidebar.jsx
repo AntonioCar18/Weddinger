@@ -9,44 +9,44 @@ export default function Sidebar({ activeTab }) {
     const [names, setNames] = useState("Učitavanje..."); // Početno stanje
 
     const handleLogout = async () => {
-    try {
+        try {
 
-        window.location.replace("/login");
-        // Pozivamo backend da obriše cookie
-        await fetch("/api/logout", { 
-            method: "POST", 
-            credentials: 'include' // Ključno za slanje cookieja
-        });
-        
-        // Nakon toga, samo očisti lokalno stanje i preusmjeri
-        queryClient.clear();
-    } catch (error) {
-        console.error("Greška pri odjavi:", error);
-    }
-};
+            window.location.replace("/login");
+            // Pozivamo backend da obriše cookie
+            await fetch("/api/logout", { 
+                method: "POST", 
+                credentials: 'include' // Ključno za slanje cookieja
+            });
+            
+            // Nakon toga, samo očisti lokalno stanje i preusmjeri
+            queryClient.clear();
+        } catch (error) {
+            console.error("Greška pri odjavi:", error);
+        }
+    };
 
     const { data: userData } = useQuery({
-  queryKey: ['user-profile'],
-  queryFn: async () => {
-    const response = await fetch("/api/me", { credentials: 'include' });
-    if (response.status === 401) {
-      window.location.href = "/login";
-      throw new Error("Neautorizirano");
-    }
-    const data = await response.json();
-    return data.user;
-  },
-  staleTime: 60000, // Podaci su "svježi" 1 minutu, nema potrebe za pozivom servera prije toga
-  refetchInterval: 30000, // Automatski će raditi provjeru svakih 30 sekundi, ali samo ako je prozor aktivan
-  refetchOnWindowFocus: true, // Ovo je "bonus": ako korisnik prebaci tab i vrati se, odmah će provjeriti sesiju
-});
+        queryKey: ['user-profile'],
+        queryFn: async () => {
+            const response = await fetch("/api/me", { credentials: 'include' });
+            if (response.status === 401) {
+            window.location.href = "/login";
+            throw new Error("Neautorizirano");
+            }
+            const data = await response.json();
+            return data.user;
+        },
+        staleTime: 3000, // Podaci su "svježi" 3 sekunde, nema potrebe za pozivom servera prije toga
+        refetchInterval: 3000, // Automatski će raditi provjeru svakih 3 sekunde, ali samo ako je prozor aktivan
+        refetchOnWindowFocus: true, // Ovo je "bonus": ako korisnik prebaci tab i vrati se, odmah će provjeriti sesiju
+        });
 
-// Postavljanje imena - React Query će ovo pokrenuti svaki put kad userData stigne
-useEffect(() => {
-  if (userData) {
-    setNames(`${userData.partner_one} & ${userData.partner_two}`);
-  }
-}, [userData]);
+        // Postavljanje imena - React Query će ovo pokrenuti svaki put kad userData stigne
+        useEffect(() => {
+        if (userData) {
+            setNames(`${userData.partner_one} & ${userData.partner_two}`);
+        }
+        }, [userData]);
 
     const menuItems = [
         {
