@@ -9,6 +9,7 @@ import TaskTableItem from "../components/taskTableItem";
 import { allSuggestions } from "../components/suggestions";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import TasksGraph from "../components/tasksGraph";
+import { useNavigate } from "react-router-dom";
 
 
 const SuggestionCard = ({ suggestion }) => (
@@ -23,6 +24,7 @@ const SuggestionCard = ({ suggestion }) => (
 
 const Tasks = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const navigate = useNavigate();
     const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
     const [partners, setPartners] = useState([]);
     const [selectedCategory, setSelectedCategory] = useState("Sve");
@@ -164,7 +166,7 @@ const Tasks = () => {
             {isSidebarOpen && <div className="fixed inset-0 bg-black/40 backdrop-blur-xs z-30 lg:hidden" onClick={() => setIsSidebarOpen(false)} />}
             
             <div className={`fixed inset-y-0 left-0 w-64 bg-white flex flex-col p-6 shadow-xl h-full border-r border-gray-100 z-40 lg:z-10 lg:static transform ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0 transition-transform duration-300 ease-in-out`}>
-                <div className="flex items-center justify-between lg:justify-center">
+                <div onClick={() => navigate("/dashboard")} className="cursor-pointer flex items-center justify-between lg:justify-center">
                     <img src={weddingerLogo} alt="Weddinger Logo" className="h-auto w-36 lg:w-44" />
                     <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden p-2 text-gray-500 hover:text-gray-800">
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
@@ -183,7 +185,7 @@ const Tasks = () => {
                             <h1 className="text-xl md:text-2xl lg:text-3xl font-extrabold tracking-tight truncate">Pregled zadataka</h1>
                             <p className="hidden md:block text-sm lg:text-base text-gray-500 truncate mt-0.5">Nadzirajte i upravljajte svojim zadacima.</p>
                         </div>
-                        <button className="hidden lg:block cursor-pointer bg-[#B8926A] text-white shadow-md shadow-[#B8926A]/20 px-8 py-3.5 rounded-xl text-base font-semibold hover:bg-[#a07b5c] active:scale-98 transition-all duration-200" onClick={() => setIsAddTaskOpen(true)}>
+                        <button className="hidden lg:block cursor-pointer bg-linear-to-r from-[#c39d76] to-[#8B6B47] text-white shadow-md shadow-[#B8926A]/20 px-8 py-3.5 rounded-xl text-base font-semibold hover:bg-[#a07b5c] active:scale-98 transition-all duration-200" onClick={() => setIsAddTaskOpen(true)}>
                             Dodaj zadatak
                         </button>
                     </div>

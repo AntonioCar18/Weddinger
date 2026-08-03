@@ -1,3 +1,4 @@
+import { X, ListPlus } from "lucide-react";
 import { useState } from "react";
 
 const AddTask = ({ onClose, onSave, partners }) => {
@@ -25,42 +26,54 @@ const AddTask = ({ onClose, onSave, partners }) => {
         onSave(taskData);
     };
 
+    const selectArrowStyle = {
+        backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'right 1rem center',
+        backgroundSize: '1em'
+    };
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 overflow-y-auto">
-            <form onSubmit={handleSubmit} className="bg-white flex flex-col w-full max-w-lg p-8 shadow-2xl rounded-2xl relative my-auto border border-gray-100">
-                <button 
-                    type="button"
-                    onClick={onClose} 
-                    className="absolute top-5 right-5 text-gray-400 hover:text-gray-600 text-2xl font-medium transition cursor-pointer"
-                >
-                    &times;
-                </button>
+            <form onSubmit={handleSubmit} className="bg-white flex flex-col w-full max-w-lg p-8 shadow-2xl rounded-2xl my-auto border border-gray-100">
+                <div className="flex items-center justify-between mb-6 pb-5 border-b border-gray-100">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2.5 bg-[#B8926A]/10 rounded-xl text-[#8B6B47]">
+                            <ListPlus size={20} strokeWidth={2.5} />
+                        </div>
+                        <h2 className="text-xl font-extrabold text-gray-800">Novi zadatak</h2>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="cursor-pointer p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-50 transition"
+                    >
+                        <X size={20} strokeWidth={2.5} />
+                    </button>
+                </div>
 
-                <h1 className="text-2xl font-extrabold text-gray-800 text-center mb-6">Novi zadatak</h1>
-                
-                <div className="flex flex-col space-y-4">
-                    {/* Naziv */}
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-600 mb-1.5">Naziv zadatka*</label>
-                        <input 
-                            type="text" 
+                <div className="flex flex-col gap-5">
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-sm font-semibold text-gray-600">Naziv zadatka *</label>
+                        <input
+                            type="text"
                             name="task_name"
                             required
                             value={taskData.task_name}
                             onChange={handleChange}
-                            placeholder="npr. Priprema dekoracija" 
-                            className="w-full h-12 px-4 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#B8926A]/20 focus:border-[#B8926A] text-gray-700 outline-hidden transition" 
+                            placeholder="npr. Priprema dekoracija"
+                            className="w-full h-12 px-4 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#B8926A]/20 focus:border-[#B8926A] text-gray-700 outline-hidden transition"
                         />
                     </div>
 
-                    {/* Vlasnik */}
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-600 mb-1.5">Zadužena osoba</label>
-                        <select 
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-sm font-semibold text-gray-600">Zadužena osoba</label>
+                        <select
                             name="task_owner"
                             value={taskData.task_owner}
                             onChange={handleChange}
-                            className="w-full h-12 px-4 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#B8926A]/20 focus:border-[#B8926A] text-gray-700 outline-hidden transition appearance-none"
+                            className="w-full h-12 px-4 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#B8926A]/20 focus:border-[#B8926A] text-gray-700 outline-hidden transition cursor-pointer appearance-none"
+                            style={selectArrowStyle}
                         >
                             <option value="">Odaberi osobu</option>
                             {partners?.map((name) => (
@@ -69,16 +82,16 @@ const AddTask = ({ onClose, onSave, partners }) => {
                         </select>
                     </div>
 
-                    {/* Kategorija i Datum */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="min-w-0">
-                            <label className="block text-sm font-semibold text-gray-600 mb-1.5">Kategorija*</label>
+                        <div className="min-w-0 flex flex-col gap-1.5">
+                            <label className="text-sm font-semibold text-gray-600">Kategorija *</label>
                             <select
                                 name="task_category"
                                 value={taskData.task_category}
                                 onChange={handleChange}
                                 required
-                                className="w-full h-12 px-4 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#B8926A]/20 focus:border-[#B8926A] text-gray-700 outline-hidden transition appearance-none"
+                                className="w-full h-12 px-4 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#B8926A]/20 focus:border-[#B8926A] text-gray-700 outline-hidden transition cursor-pointer appearance-none"
+                                style={selectArrowStyle}
                             >
                                 <option value="Prostor">Prostor</option>
                                 <option value="Ugostiteljstvo">Ugostiteljstvo</option>
@@ -89,9 +102,9 @@ const AddTask = ({ onClose, onSave, partners }) => {
                             </select>
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-600 mb-1.5">Datum dospijeća*</label>
-                            <input 
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-sm font-semibold text-gray-600">Datum dospijeća *</label>
+                            <input
                                 type="date"
                                 name="task_due_date"
                                 min={new Date().toISOString().split('T')[0]}
@@ -103,14 +116,14 @@ const AddTask = ({ onClose, onSave, partners }) => {
                         </div>
                     </div>
 
-                    {/* Prioritet */}
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-600 mb-1.5">Prioritet*</label>
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-sm font-semibold text-gray-600">Prioritet *</label>
                         <select
                             name="task_priority"
                             value={taskData.task_priority}
                             onChange={handleChange}
-                            className="w-full h-12 px-4 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#B8926A]/20 focus:border-[#B8926A] text-gray-700 outline-hidden transition appearance-none"
+                            className="w-full h-12 px-4 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#B8926A]/20 focus:border-[#B8926A] text-gray-700 outline-hidden transition cursor-pointer appearance-none"
+                            style={selectArrowStyle}
                             required
                         >
                             <option value="Visok">Visok</option>
@@ -119,23 +132,33 @@ const AddTask = ({ onClose, onSave, partners }) => {
                         </select>
                     </div>
 
-                    {/* Bilješke */}
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-600 mb-1.5">Bilješke</label>
-                        <textarea 
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-sm font-semibold text-gray-600">Bilješke</label>
+                        <textarea
                             name="task_notes"
                             value={taskData.task_notes}
                             onChange={handleChange}
-                            rows="4"
-                            placeholder="Dodatne napomene..."
+                            rows="3"
+                            placeholder="Dodatne napomene.."
                             className="w-full p-4 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#B8926A]/20 focus:border-[#B8926A] text-gray-700 outline-hidden transition resize-none"
                         ></textarea>
                     </div>
                 </div>
 
-                <div className="flex justify-end space-x-3 mt-8">
-                    <button type="button" onClick={onClose} className="px-6 py-3 text-gray-500 hover:text-gray-800 font-semibold transition cursor-pointer">Odustani</button>
-                    <button type="submit" className="px-7 py-3 bg-[#B8926A] text-white font-semibold rounded-xl hover:bg-[#a07b5c] shadow-md transition cursor-pointer">Spremi</button>
+                <div className="flex justify-end gap-3 mt-6">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="px-6 py-3 text-gray-500 hover:text-gray-800 hover:bg-gray-50 rounded-xl font-semibold transition cursor-pointer"
+                    >
+                        Odustani
+                    </button>
+                    <button
+                        type="submit"
+                        className="px-7 py-3 bg-linear-to-br from-[#c39d76] to-[#8B6B47] text-white font-semibold rounded-xl shadow-md shadow-[#B8926A]/20 hover:shadow-lg active:scale-97 transition-all duration-200 cursor-pointer"
+                    >
+                        Spremi
+                    </button>
                 </div>
             </form>
         </div>

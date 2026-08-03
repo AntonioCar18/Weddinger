@@ -9,6 +9,7 @@ import Budget from "./pages/budget";
 import Tasks from "./pages/tasks";
 import Partners from "./pages/partners";
 import Settings from "./pages/settings";
+import Documents from "./pages/documents";
 
 // 2. Kreiraj instancu klijenta izvan komponente da se ne re-kreira kod svakog rendera
 export const queryClient = new QueryClient({
@@ -41,12 +42,13 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
 
           <Route element={<ProtectedRoute />}>
-            <Route path="/dashboard" element={<Guests />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/guests" element={<Guests />} />
             <Route path="/sitting-schedule" element={<SittingSchedule />} />
             <Route path="/budget" element={<Budget />} />
             <Route path="/tasks" element={<Tasks />} />
             <Route path="/partners" element={<Partners />} />
+            <Route path="/documents" element={<Documents />} />
             <Route path="/settings" element={<Settings />} />
           </Route>
 

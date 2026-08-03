@@ -51,7 +51,7 @@ export default function Sidebar({ activeTab }) {
     const menuItems = [
         {
             name: "Nadzorna ploča",
-            path: "/guests",
+            path: "/dashboard",
             icon: (
                 <path d="M3 13h8V3H3v10zM3 21h8v-6H3v6zM13 21h8V11h-8v10zM13 3v6h8V3h-8z" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
             )
@@ -98,6 +98,13 @@ export default function Sidebar({ activeTab }) {
             )
         },
         {
+            name: "Dokumenti",
+            path: "/documents",
+            icon: (
+                <path d="M4 4h16v16H4V4zm2 2v12h12V6H6z" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+            )
+        },
+        {
             name: "Postavke",
             path: "/settings",
             icon: (
@@ -111,7 +118,7 @@ export default function Sidebar({ activeTab }) {
 
     return (
         <div>
-            <div className="mt-3 mx-1 py-3 px-4 bg-gray-50/70 border border-gray-100 rounded-xl flex items-center space-x-3">
+            <div onClick={() => navigate("/settings")} className="cursor-pointer mt-3 mx-1 py-3 px-4 bg-gray-50/70 border border-gray-100 rounded-xl flex items-center space-x-3">
                 <div className="w-2 h-2 rounded-full bg-[#B8926A] shrink-0" />
                 <div className="min-w-0 flex-1">
                     <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider leading-none">Mladenci</p>
@@ -124,13 +131,11 @@ export default function Sidebar({ activeTab }) {
             <div className="flex flex-col flex-1 mt-5 overflow-y-auto">
                 <ul className="space-y-2 font-semibold">
                     {menuItems.map((item) => {
-                        // Provjeravamo je li stavka aktivna po imenu (npr. "Gosti", "Raspored sjedenja")
                         const isActive = activeTab === item.name;
 
                         return (
                             <li
                                 key={item.name}
-                                // 2. POPRAVAK: Dodana ključna onClick metoda koja izvršava navigaciju na klik!
                                 onClick={() => item.path && navigate(item.path)}
                                 className={`flex items-center space-x-4 px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-200 group ${
                                     isActive

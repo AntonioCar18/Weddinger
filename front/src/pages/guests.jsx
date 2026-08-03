@@ -8,6 +8,8 @@ import EditGuest from "../components/editGuest";
 import Sidebar from "../components/sidebar";
 import { useQuery } from '@tanstack/react-query';
 import { UsersRound } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import DeleteModal from "../components/deleteModal";
 
 const Guests = () => {
     const navigate = useNavigate();
@@ -17,6 +19,7 @@ const Guests = () => {
     const [plusOneFilter, setPlusOneFilter] = useState("Svi");
     const [menuFilter, setMenuFilter] = useState("Svi");
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [deleteModalOpen, setDeleteModalOpen] = useState(null);
 
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 7;
@@ -24,7 +27,7 @@ const Guests = () => {
     const [selectGuestForEdit, setSelectGuestForEdit] = useState(null);
 
     const { data: guestsData = [], isLoading, refetch } = useQuery({
-        queryKey: ['guests'], // Ovo je ključ koji povezuje cache
+        queryKey: ['guests'], 
         queryFn: async () => {
             const response = await fetch("/api/guests", { 
                 method: "GET", 
@@ -33,8 +36,8 @@ const Guests = () => {
             if (!response.ok) throw new Error("Greška");
             return response.json();
         },
-        staleTime: 5000, // Podaci su "svježi" 5 sekundi - neće ih ponovo tražiti dokle god su svježi
-        refetchInterval: 10000, // Zadržavamo tvoj interval od 10s u pozadini
+        staleTime: 5000, 
+        refetchInterval: 10000,
     });
     
 
@@ -88,9 +91,6 @@ const Guests = () => {
     const totalPages = Math.ceil(filteredGuests.length / itemsPerPage);
 
     const deleteGuest = async (guestId) => {
-        if (!window.confirm("Jeste li sigurni da želite izbrisati ovog gosta?")) {
-            return;
-        }
         try {
             const response = await fetch(`/api/guests/${guestId}`, {
                 method: "DELETE",
@@ -191,7 +191,7 @@ const Guests = () => {
         )}
 
         <div className={`fixed inset-y-0 left-0 w-64 bg-white flex flex-col p-6 shadow-xl h-full border-r border-gray-100 z-40 lg:z-10 lg:static transform ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0 transition-transform duration-300 ease-in-out`}>
-            <div className="flex items-center justify-between lg:justify-center">
+            <div onClick={() => navigate("/dashboard")} className="cursor-pointer flex items-center justify-between lg:justify-center">
                 <img src={weddingerLogo} alt="Weddinger Logo" className="h-auto w-36 lg:w-44" />
                 <button 
                     onClick={() => setIsSidebarOpen(false)}
@@ -205,8 +205,8 @@ const Guests = () => {
             <Sidebar activeTab="Gosti"/>
         </div>
         <button
-                onClick={() => setAddItem(true)}
-                className="lg:hidden fixed bottom-8 right-6 bg-[#B8926A] text-white p-4 rounded-full shadow-lg shadow-[#B8926A]/40 active:scale-95 transition-all duration-200 z-40 flex items-center justify-center cursor-pointer"
+                onClick={() => setShowAddPage(true)}
+                className="lg:hidden fixed bottom-8 right-6 bg-linear-to-r from-[#c39d76] to-[#8B6B47]  text-white p-4 rounded-full shadow-lg shadow-[#B8926A]/40 active:scale-95 transition-all duration-200 z-40 flex items-center justify-center cursor-pointer"
             >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
@@ -230,13 +230,13 @@ const Guests = () => {
 
                 <div className="flex items-center space-x-3">
                     <button 
-                        className="cursor-pointer bg-[#B8926A] text-white shadow-md shadow-[#B8926A]/20 px-4 lg:px-8 py-2.5 lg:py-3.5 rounded-xl text-sm lg:text-base font-semibold hover:bg-[#a07b5c] active:scale-98 transition-all duration-200 whitespace-nowrap"
+                        className="cursor-pointer bg-linear-to-r from-[#c39d76] to-[#8B6B47]  text-white shadow-md shadow-[#B8926A]/20 px-4 lg:px-8 py-2.5 lg:py-3.5 rounded-xl text-sm lg:text-base font-semibold hover:bg-[#a07b5c] active:scale-98 transition-all duration-200 whitespace-nowrap"
                         onClick={() => ExportGuestsToPDF(filteredGuests)}
                     >
                         Izvezi u PDF
                     </button>
                     <button 
-                        className="hidden lg:block cursor-pointer bg-[#B8926A] text-white shadow-md shadow-[#B8926A]/20 px-4 lg:px-8 py-2.5 lg:py-3.5 rounded-xl text-sm lg:text-base font-semibold hover:bg-[#a07b5c] active:scale-98 transition-all duration-200 whitespace-nowrap"
+                        className="hidden lg:block cursor-pointer bg-linear-to-r from-[#c39d76] to-[#8B6B47]  text-white shadow-md shadow-[#B8926A]/20 px-4 lg:px-8 py-2.5 lg:py-3.5 rounded-xl text-sm lg:text-base font-semibold hover:bg-[#a07b5c] active:scale-98 transition-all duration-200 whitespace-nowrap"
                         onClick={() => setShowAddPage(true)}
                     >
                         <span className="inline cursor-pointer lg:hidden">+ </span>Dodaj gosta
@@ -395,7 +395,7 @@ const Guests = () => {
                                                     className="text-red-300 hover:text-red-200 cursor-pointer font-medium transition-colors" 
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        deleteGuest(guest.id);
+                                                        setDeleteModalOpen(guest.id);
                                                     }}
                                                 >
                                                     Izbriši
@@ -464,10 +464,10 @@ const Guests = () => {
                                         {guest.plus_one ? 'Da' : 'Ne'}
                                     </span>
                                     <button 
-                                        className="text-red-500 hover:text-red-700 font-medium transition-colors" 
+                                        className="text-red-500 cursor-pointer hover:text-red-700 font-medium transition-colors" 
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            deleteGuest(guest.id);
+                                            setDeleteModalOpen(guest.id);
                                         }}
                                     >
                                         Izbriši
@@ -523,6 +523,18 @@ const Guests = () => {
                     }} 
                 />
             )}
+
+            {deleteModalOpen && (
+                <DeleteModal
+                    onDelete={() => {
+                        deleteGuest(deleteModalOpen);
+                        setDeleteModalOpen(null);
+                    }}
+                    onCancel={() => setDeleteModalOpen(null)}
+                    desc="Jeste li sigurni da želite izbrisati ovog gosta? Ova akcija se ne može poništiti."
+                    deleteText="Obriši gosta"
+                />
+            )}        
         </div>
     </div>
 );

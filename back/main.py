@@ -8,12 +8,24 @@ from pydantic import BaseModel
 from passlib.context import CryptContext
 import jwt
 from dotenv import load_dotenv
+import uuid
+import magic
+from io import BytesIO
+from minio import Minio
+from minio.error import S3Error
+from fastapi import UploadFile, File
+from fastapi.responses import StreamingResponse
 
 from database import takeFromBase, executeQuery
 
 load_dotenv()
 
 app = FastAPI()
+
+MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT")
+MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY")
+MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY")
+MINIO_BUCKET = os.getenv("MINIO_BUCKET")
 
 # Konfiguracija
 SECRET_KEY = os.getenv("JWT_SECRET_KEY")
@@ -27,6 +39,20 @@ app.add_middleware(
     allow_headers=["*"],
     allow_credentials=True,
 )
+
+minio_client = Minio(
+    MINIO_ENDPOINT,
+    access_key=MINIO_ACCESS_KEY,
+    secret_key=MINIO_SECRET_KEY,
+    secure=False,
+)
+
+MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
+ALLOWED_MIME_TYPES = {
+    "application/pdf": ".pdf",
+    "application/msword": ".doc",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
+}
 
 # --- Autentifikacija ---
 def get_current_user(access_token: str = Cookie(None)):
@@ -97,13 +123,28 @@ class StatusUpdateModel(BaseModel):
 class UpdateUserModel(BaseModel):
     partner_one: str
     partner_two: str
-    wedding_date: Optional[str] = None
-    wedding_location: Optional[str] = None
+
+class UpdateEmailModel(BaseModel):
+    partner_one: str
+    partner_two: Optional[str] = None
+
+class UpdatePasswordModel(BaseModel):
+    current_password: str
+    new_password: str
+
+class EngagementDateModel(BaseModel):
+    engagement_date: str    
+
+class UpdateDateModel(BaseModel):
+    wedding_date: str
+
+class UpdateLocationModel(BaseModel):
+    wedding_location: str
 
 # --- Rute ---
 @app.post("/api/login")
 def login(login_data: LoginModel, response: Response):
-    user = takeFromBase("SELECT * FROM users WHERE email = %s;", (login_data.email,))
+    user = takeFromBase("SELECT * FROM users WHERE email = %s OR partner_email = %s;", (login_data.email, login_data.email))
     if not user or not pwd_context.verify(login_data.password, user[0]["password"]):
         raise HTTPException(status_code=401, detail="Neispravan email ili lozinka")
     
@@ -119,7 +160,7 @@ def logout(response: Response):
 @app.get("/api/me")
 def get_me(current_user: dict = Depends(get_current_user)):
     user_id = current_user.get("sub")
-    user = takeFromBase("SELECT partner_one, partner_two, wedding_date, wedding_location FROM users WHERE id = %s;", (user_id,))
+    user = takeFromBase("SELECT partner_one, partner_two, wedding_date, wedding_location, email, partner_email, engagement_date FROM users WHERE id = %s;", (user_id,))
     if not user:
         raise HTTPException(status_code=404, detail="Korisnik nije nađen")
     return {"user": user[0]}
@@ -127,12 +168,69 @@ def get_me(current_user: dict = Depends(get_current_user)):
 @app.put("/api/me")
 def update_me(update_data: UpdateUserModel, current_user: dict = Depends(get_current_user)):
     user_id = current_user.get("sub")
-    query = "UPDATE users SET partner_one = %s, partner_two = %s, wedding_date = %s, wedding_location = %s WHERE id = %s;"
-    success = executeQuery(query, (update_data.partner_one, update_data.partner_two, update_data.wedding_date, update_data.wedding_location, user_id))
+    query = "UPDATE users SET partner_one = %s, partner_two = %s WHERE id = %s;"
+    success = executeQuery(query, (update_data.partner_one, update_data.partner_two, user_id))
     if success:
         return {"message": "Uspješno ažurirano"}
     else:
         raise HTTPException(status_code=500, detail="Greška pri ažuriranju")
+
+@app.put("/api/me/engagement-date")
+def update_engagement_date(update_data: EngagementDateModel, current_user: dict = Depends(get_current_user)):
+    user_id = current_user.get("sub")
+    query = "UPDATE users SET engagement_date = %s WHERE id = %s;"
+    success = executeQuery(query, (update_data.engagement_date, user_id))
+    if success:
+        return {"message": "Uspješno ažurirano"}
+    else:
+        raise HTTPException(status_code=500, detail="Greška pri ažuriranju datuma zaruka")
+
+@app.put("/api/me/date")
+def update_date(update_data: UpdateDateModel, current_user: dict = Depends(get_current_user)):
+    user_id = current_user.get("sub")
+    query = "UPDATE users SET wedding_date = %s WHERE id = %s;"
+    success = executeQuery(query, (update_data.wedding_date, user_id))
+    if success:
+        return {"message": "Uspješno ažurirano"}
+    else:
+        raise HTTPException(status_code=500, detail="Greška pri ažuriranju datuma")
+
+@app.put("/api/me/location")
+def update_location(update_data: UpdateLocationModel, current_user: dict = Depends(get_current_user)):
+    user_id = current_user.get("sub")
+    query = "UPDATE users SET wedding_location = %s WHERE id = %s;"
+    success = executeQuery(query, (update_data.wedding_location, user_id))
+    if success:
+        return {"message": "Uspješno ažurirano"}
+    else:
+        raise HTTPException(status_code=500, detail="Greška pri ažuriranju lokacije")
+
+@app.put("/api/me/email")
+def update_email(update_data: UpdateEmailModel, current_user: dict = Depends(get_current_user)):
+    user_id = current_user.get("sub")
+    query = "UPDATE users SET email = %s, partner_email = %s WHERE id = %s;"
+    success = executeQuery(query, (update_data.partner_one, update_data.partner_two, user_id))
+    if success:
+        return {"message": "Uspješno ažurirano"}
+    else:
+        raise HTTPException(status_code=500, detail="Greška pri ažuriranju")
+
+@app.put("/api/me/password")
+def update_password(update_data: UpdatePasswordModel, current_user: dict = Depends(get_current_user)):
+    user_id = current_user.get("sub")
+    user = takeFromBase("SELECT password FROM users WHERE id = %s;", (user_id,))
+    if not user:
+        raise HTTPException(status_code=404, detail="Korisnik nije nađen")
+    if not pwd_context.verify(update_data.current_password, user[0]["password"]):
+        raise HTTPException(status_code=400, detail="Trenutna lozinka nije ispravna")
+
+    hashed = pwd_context.hash(update_data.new_password)
+    query = "UPDATE users SET password = %s WHERE id = %s;"
+    success = executeQuery(query, (hashed, user_id))
+    if success:
+        return {"message": "Uspješno ažurirano"}
+    else:
+        raise HTTPException(status_code=500, detail="Greška pri ažuriranju lozinke")
 
 @app.post("/api/register")
 def register(register_data: RegisterModel):
@@ -145,11 +243,33 @@ def register(register_data: RegisterModel):
         raise HTTPException(status_code=500, detail="Greška pri registraciji")
     return {"message": "Uspješna registracija"}
 
+@app.delete("/api/me")
+def delete_account(current_user: dict = Depends(get_current_user)):
+    user_id = current_user.get("sub")
+    success = executeQuery("DELETE FROM users WHERE id = %s;", (user_id,))
+    if success:
+        return {"message": "Obrisano"}
+    else:
+        raise HTTPException(status_code=500, detail="Greška pri brisanju računa")
+
 # Gosti
 
 @app.get("/api/guests")
 def get_guests(current_user: dict = Depends(get_current_user)):
     return takeFromBase("SELECT * FROM guests WHERE user_id = %s ORDER BY id ASC;", (current_user.get("sub"),))
+
+@app.get("/api/guests/numbers")
+def get_guests_numbers(current_user: dict = Depends(get_current_user)):
+    total_guests = takeFromBase("SELECT COUNT(*) AS total FROM guests WHERE user_id = %s;", (current_user.get("sub"),))[0]['total']
+    total_plus_one_guests = takeFromBase("SELECT COUNT(*) AS total_plus_one FROM guests WHERE user_id = %s AND plus_one = true;", (current_user.get("sub"),))[0]['total_plus_one']
+    total_guests_with_plus_ones = total_guests + total_plus_one_guests
+    confirmed_guests = takeFromBase("SELECT COUNT(*) AS confirmed FROM guests WHERE user_id = %s AND status = 'Potvrđeno';", (current_user.get("sub"),))[0]['confirmed']
+    confirmed_plus_one_guests = takeFromBase("SELECT COUNT(*) AS confirmed_plus_one FROM guests WHERE user_id = %s AND status = 'Potvrđeno' AND plus_one = true;", (current_user.get("sub"),))[0]['confirmed_plus_one']
+    confirmed_total = confirmed_guests + confirmed_plus_one_guests
+    return {
+        "total_guests": total_guests_with_plus_ones,
+        "confirmed_guests": confirmed_total,
+    }
 
 @app.post("/api/guests")
 def add_guest(guest_data: GuestModel, current_user: dict = Depends(get_current_user)):
@@ -352,3 +472,80 @@ def get_partners():
         "flower_partners": len([p for p in partners if p['partner_category'] == 'Cvijeće/Dekoracije']) if partners else 0,
         "music_partners": len([p for p in partners if p['partner_category'] == 'Glazba/Pratnja/DJ']) if partners else 0
     }
+
+
+#Dokumenti
+
+@app.post("/api/documents")
+async def upload_document(file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
+    user_id = current_user.get("sub")
+    contents = await file.read()
+
+    if len(contents) > MAX_FILE_SIZE:
+        raise HTTPException(status_code=400, detail="Datoteka je prevelika, maksimalno 5MB")
+
+    real_mime = magic.from_buffer(contents, mime=True)
+    if real_mime not in ALLOWED_MIME_TYPES:
+        raise HTTPException(status_code=400, detail="Dozvoljeni su samo PDF i Word dokumenti")
+
+    storage_key = f"{user_id}/{uuid.uuid4()}{ALLOWED_MIME_TYPES[real_mime]}"
+
+    minio_client.put_object(MINIO_BUCKET, storage_key, BytesIO(contents), length=len(contents), content_type=real_mime)
+
+    query = "INSERT INTO documents (user_id, file_name, storage_key, file_type, file_size) VALUES (%s, %s, %s, %s, %s);"
+    if not executeQuery(query, (user_id, file.filename, storage_key, real_mime, len(contents))):
+        raise HTTPException(status_code=500, detail="Greška pri spremanju dokumenta")
+
+    return {"message": "Dokument uspješno dodan"}
+
+
+@app.get("/api/documents")
+def get_documents(current_user: dict = Depends(get_current_user)):
+    docs = takeFromBase(
+        "SELECT id, file_name, file_type, file_size, uploaded_at FROM documents WHERE user_id = %s ORDER BY uploaded_at DESC;",
+        (current_user.get("sub"),)
+    )
+    docs = docs if docs is not None else []
+    return {
+        "data": docs,
+        "total_documents": len(docs) if docs else 0,
+        "total_size": sum(doc['file_size'] for doc in docs) if docs else 0,
+        "last_uploaded": max(doc['uploaded_at'] for doc in docs) if docs else None
+    }
+
+
+@app.get("/api/documents/{doc_id}/download")
+def download_document(doc_id: int, current_user: dict = Depends(get_current_user)):
+    user_id = current_user.get("sub")
+    doc = takeFromBase("SELECT storage_key, file_name, file_type FROM documents WHERE id = %s AND user_id = %s;", (doc_id, user_id))
+    if not doc:
+        raise HTTPException(status_code=404, detail="Dokument nije pronađen")
+
+    doc = doc[0]
+    try:
+        obj = minio_client.get_object(MINIO_BUCKET, doc["storage_key"])
+    except S3Error:
+        raise HTTPException(status_code=404, detail="Datoteka nije pronađena u pohrani")
+
+    return StreamingResponse(
+        obj.stream(32 * 1024),
+        media_type=doc["file_type"],
+        headers={"Content-Disposition": f'attachment; filename="{doc["file_name"]}"'}
+    )
+
+
+@app.delete("/api/documents/{doc_id}")
+def delete_document(doc_id: int, current_user: dict = Depends(get_current_user)):
+    user_id = current_user.get("sub")
+    doc = takeFromBase("SELECT storage_key FROM documents WHERE id = %s AND user_id = %s;", (doc_id, user_id))
+    if not doc:
+        raise HTTPException(status_code=404, detail="Dokument nije pronađen")
+
+    try:
+        minio_client.remove_object(MINIO_BUCKET, doc[0]["storage_key"])
+    except S3Error:
+        raise HTTPException(status_code=500, detail="Greška pri brisanju datoteke iz pohrane")
+
+    if executeQuery("DELETE FROM documents WHERE id = %s AND user_id = %s;", (doc_id, user_id)):
+        return {"message": "Dokument obrisan"}
+    raise HTTPException(status_code=500, detail="Greška pri brisanju iz baze")

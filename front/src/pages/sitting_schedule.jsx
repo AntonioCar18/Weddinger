@@ -21,6 +21,7 @@ const SittingSchedule = () => {
     const [draggedGuestId, setDraggedGuestId] = useState(null);
     const [isEditTableOpen, setIsEditTableOpen] = useState(false);
     const [tableToEdit, setTableToEdit] = useState(null);
+    const navigate = useNavigate();
 
     // Dohvaćanje gostiju putem React Queryja
     const { data: guestsFromQuery } = useQuery({
@@ -43,6 +44,7 @@ const SittingSchedule = () => {
     const fetchTables = async () => {
         try {
             const response = await fetch("/api/tables", { method: "GET", credentials: "include" });
+            if (!response.ok) throw new Error("Greška pri učitavanju stolova");
             const tables_data = await response.json();
             setTables(tables_data);
         } catch (error) {
@@ -187,7 +189,7 @@ const SittingSchedule = () => {
             )}
 
             <div className={`fixed inset-y-0 left-0 w-64 bg-white flex flex-col p-6 shadow-xl h-full border-r border-gray-100 z-40 lg:z-10 lg:static transform ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0 transition-transform duration-300 ease-in-out`}>
-                <div className="flex items-center justify-between lg:justify-center">
+                <div onClick={() => navigate("/dashboard")} className="cursor-pointer flex items-center justify-between lg:justify-center">
                     <img src={weddingerLogo} alt="Weddinger Logo" className="h-auto w-36 lg:w-44" />
                     <button 
                         onClick={() => setIsSidebarOpen(false)}
@@ -220,13 +222,13 @@ const SittingSchedule = () => {
 
                         <div className="flex items-center space-x-3">
                             <button 
-                                className="cursor-pointer bg-[#B8926A] text-white shadow-md shadow-[#B8926A]/20 px-4 lg:px-8 py-2.5 lg:py-3.5 rounded-xl text-sm lg:text-base font-semibold hover:bg-[#a07b5c] active:scale-98 transition-all duration-200 whitespace-nowrap"
+                                className="cursor-pointer bg-linear-to-r from-[#c39d76] to-[#8B6B47] text-white shadow-md shadow-[#B8926A]/20 px-4 lg:px-8 py-2.5 lg:py-3.5 rounded-xl text-sm lg:text-base font-semibold hover:bg-[#a07b5c] active:scale-98 transition-all duration-200 whitespace-nowrap"
                                 onClick={() => ExportTablesToPDF(guestSeat, tables)}
                             >
                                 Izvezi u PDF
                             </button>
                             <button 
-                                className="hidden lg:block cursor-pointer bg-[#B8926A] text-white shadow-md shadow-[#B8926A]/20 px-4 lg:px-8 py-2.5 lg:py-3.5 rounded-xl text-sm lg:text-base font-semibold hover:bg-[#a07b5c] active:scale-98 transition-all duration-200 whitespace-nowrap"
+                                className="hidden lg:block cursor-pointer bg-linear-to-r from-[#c39d76] to-[#8B6B47] text-white shadow-md shadow-[#B8926A]/20 px-4 lg:px-8 py-2.5 lg:py-3.5 rounded-xl text-sm lg:text-base font-semibold hover:bg-[#a07b5c] active:scale-98 transition-all duration-200 whitespace-nowrap"
                                 onClick={() => setAddTable(true)}
                             >
                                 <span className="inline cursor-pointer lg:hidden">+ </span>Dodaj stol
@@ -293,7 +295,7 @@ const SittingSchedule = () => {
                                 {guestSeat
                                     .filter(g => !g.table_id)
                                     .filter(g =>
-                                        `${g.name} || ${g.plus_one_name} || ""`
+                                        `${g.name} ${g.plus_one_name} || ""`
                                             .toLowerCase()
                                             .includes(searchTerm.toLowerCase())
                                     )
@@ -323,7 +325,7 @@ const SittingSchedule = () => {
 
                     <button
                         onClick={() => setAddTable(true)}
-                        className="lg:hidden fixed bottom-8 right-6 bg-[#B8926A] text-white p-4 rounded-full shadow-lg shadow-[#B8926A]/40 active:scale-95 transition-all duration-200 z-40 flex items-center justify-center cursor-pointer"
+                        className="lg:hidden fixed bottom-8 right-6 bg-linear-to-r from-[#c39d76] to-[#8B6B47]  text-white p-4 rounded-full shadow-lg shadow-[#B8926A]/40 active:scale-95 transition-all duration-200 z-40 flex items-center justify-center cursor-pointer"
                     >
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />

@@ -1,9 +1,11 @@
 import { Calendar, Check, Flag, NotebookTabs, Trash, Trash2Icon, User2, Edit2 } from "lucide-react";
 import { useState } from "react";
 import EditTask from "./editTask";
+import DeleteModal from "./deleteModal";
 
 const TaskTableItem = ({ task, deleteTask, changeTaskStatus, updateTask, partners }) => {
     const [isEditTaskOpen, setIsEditTaskOpen] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
     const categoryColors = {
         "Prostor": "bg-blue-100 text-blue-800",
         "Glazba": "bg-green-100 text-green-800",
@@ -85,9 +87,7 @@ const TaskTableItem = ({ task, deleteTask, changeTaskStatus, updateTask, partner
                 )} 
                 <button
                     onClick={() => {
-                        if (window.confirm('Are you sure you want to delete this task?')) {
-                            handleTaskDeletion();
-                        }
+                        setShowDeleteModal(true);
                     }}
                 >
                     <Trash2Icon className="w-5 h-5 text-red-300 cursor-pointer mr-6"/>
@@ -95,6 +95,14 @@ const TaskTableItem = ({ task, deleteTask, changeTaskStatus, updateTask, partner
                 </div>
                 
             </div>
+            {showDeleteModal && (
+                <DeleteModal
+                    onCancel={() => setShowDeleteModal(false)}
+                    onDelete={handleTaskDeletion}
+                    desc="Jeste li sigurni da želite obrisati ovaj zadatak? Ova akcija je nepovratna."
+                    deleteText="Da, obriši zadatak"
+                />
+            )}
         </div>
     );
 };

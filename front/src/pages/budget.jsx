@@ -10,6 +10,7 @@ import getItemCategory from "../components/iconSwitcher";
 import EditItem from "../components/editItem";
 import ExportPDFBudget from "../components/exportPDFBudget";
 import { Banknote, DeleteIcon, Euro } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Budget = () => {
     const queryClient = useQueryClient();
@@ -19,13 +20,14 @@ const Budget = () => {
     const [editItem, setEditItem] = useState(false);
     const [categoryFilter, setCategoryFilter] = useState("Svi")
     const [statusFilter, setStatusFilter] = useState("Svi")
+    const navigate = useNavigate();
 
     const newItem = async (itemData) => {
         try {
             const response = await fetch("/api/budget", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(itemData), 
+                body: JSON.stringify(itemData),
                 credentials: 'include'
             });
             if (response.ok) {
@@ -75,7 +77,7 @@ const Budget = () => {
     const budgetList = items.data || [];
 
     const filteredItems = budgetList.filter(item => {
-        const matchCategoy = categoryFilter === "Svi" || item.item_category === categoryFilter;
+        const matchCategoy = categoryFilter === "Svi" || item.item_category === categoryFilter;
         const matchStatus = statusFilter === "Svi" || item.item_status === statusFilter;
         return matchCategoy && matchStatus;
     });
@@ -105,7 +107,7 @@ const Budget = () => {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json'
-            }, 
+            },
             credentials: 'include'
         });
 
@@ -122,16 +124,62 @@ const Budget = () => {
         }
     };
 
+    const statusOrder = {
+        "Na čekanju": "Kapara",
+        "Kapara": "Plaćeno",
+        "Plaćeno": "Na čekanju",
+    };
+
+    const cycleStatus = async (item) => {
+        const newStatus = statusOrder[item.item_status] || "Na čekanju";
+
+        try {
+            const response = await fetch(`/api/budget/${item.id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    item_title: item.item_title,
+                    item_category: item.item_category,
+                    item_amount: item.item_amount,
+                    item_status: newStatus,
+                    deposit_amount: item.item_deposit || 0, // nikad se ne mijenja ovdje - kapara ostaje zapamćena u pozadini
+                    item_notes: item.item_notes,
+                }),
+                credentials: 'include'
+            });
+            if (response.ok) {
+                queryClient.invalidateQueries(['budget']);
+            } else {
+                alert("Greška prilikom promjene statusa.");
+            }
+        } catch (error) {
+            console.error("Greška:", error);
+            alert("Problem s povezivanjem na poslužitelj.");
+        }
+    };
+
+    const handleCycleStatus = (item) => {
+        const newStatus = statusOrder[item.item_status] || "Na čekanju";
+        // Prozor za unos kapare otvara se SAMO ako stavka nikad nije imala zapamćen iznos kapare.
+        // Ako je iznos već negdje u krugu unesen (item_deposit > 0), preskačemo prozor i primijenimo
+        // status direktno - korisnik ne mora ponovno upisivati isti iznos.
+        if (newStatus === "Kapara" && (!item.item_deposit || item.item_deposit <= 0)) {
+            setEditItem({ ...item, forceKaparaModal: true });
+        } else {
+            cycleStatus(item);
+        }
+    };
+
     return (
         <div className="h-dvh w-screen flex overflow-hidden bg-[#fcfbfa] relative">
             {isSidebarOpen && (
-                <div 
+                <div
                     className="fixed inset-0 bg-black/40 backdrop-blur-xs z-30 lg:hidden"
                     onClick={() => setIsSidebarOpen(false)}
                 />
             )}
             <div className={`fixed inset-y-0 left-0 w-64 bg-white flex flex-col p-6 shadow-xl h-full border-r border-gray-100 z-40 lg:z-10 lg:static transform ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0 transition-transform duration-300 ease-in-out`}>
-                <div className="flex items-center justify-between lg:justify-center">
+                <div onClick={() => navigate("/dashboard")} className="cursor-pointer flex items-center justify-between lg:justify-center">
                     <img src={weddingerLogo} alt="Weddinger Logo" className="h-auto w-36 lg:w-44" />
                     <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden p-2 text-gray-500 hover:text-gray-800">
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
@@ -151,13 +199,13 @@ const Budget = () => {
                             <p className="hidden md:block text-sm lg:text-base text-gray-500 mt-0.5">Pratite troškove svojeg vjenčanja na jednom mjestu</p>
                         </div>
                         <div className="flex items-center space-x-3">
-                            <button className="bg-[#B8926A] cursor-pointer text-white px-4 lg:px-8 py-2.5 lg:py-3.5 rounded-xl text-sm lg:text-base font-semibold hover:bg-[#a07b5c] active:scale-98 shadow-md shadow-[#B8926A]/20 transition-all duration-200 whitespace-nowrap"
+                            <button className="bg-linear-to-r from-[#c39d76] to-[#8B6B47] cursor-pointer text-white px-4 lg:px-8 py-2.5 lg:py-3.5 rounded-xl text-sm lg:text-base font-semibold hover:bg-[#a07b5c] active:scale-98 shadow-md shadow-[#B8926A]/20 transition-all duration-200 whitespace-nowrap"
                                 onClick={() => ExportPDFBudget(currentItems)}
                             >
                                 Izvezi u PDF
                             </button>
-                            <button 
-                                className="hidden lg:block cursor-pointer bg-[#B8926A] text-white shadow-md shadow-[#B8926A]/20 px-4 lg:px-8 py-2.5 lg:py-3.5 rounded-xl text-sm lg:text-base font-semibold hover:bg-[#a07b5c] active:scale-98 transition-all duration-200 whitespace-nowrap"
+                            <button
+                                className="hidden lg:block cursor-pointer bg-linear-to-r from-[#c39d76] to-[#8B6B47] text-white shadow-md shadow-[#B8926A]/20 px-4 lg:px-8 py-2.5 lg:py-3.5 rounded-xl text-sm lg:text-base font-semibold hover:bg-[#a07b5c] active:scale-98 transition-all duration-200 whitespace-nowrap"
                                 onClick={() => setAddItem(true)}
                             >
                                 Dodaj trošak
@@ -210,7 +258,7 @@ const Budget = () => {
                                         <div className="flex flex-col items-center justify-center h-full text-center py-20">
                                             <Banknote className="w-12 h-12 text-[#B8926A] mb-4" />
                                             <p className="text-gray-500 font-medium">Trenutno nema unesenih troškova.</p>
-                                            <button 
+                                            <button
                                                 onClick={() => setAddItem(true)}
                                                 className="mt-4 text-[#B8926A] font-semibold hover:underline cursor-pointer"
                                             >
@@ -229,10 +277,17 @@ const Budget = () => {
                                                 category={item.item_category}
                                                 title={item.item_title}
                                                 amount={item.item_amount}
-                                                paid={item.item_deposit}
+                                                paid={
+                                                    item.item_status === "Plaćeno"
+                                                        ? item.item_amount
+                                                        : item.item_status === "Kapara"
+                                                        ? item.item_deposit
+                                                        : 0
+                                                }
                                                 status={item.item_status}
                                                 notes={item.item_notes}
                                                 onEdit={() => setEditItem(item)}
+                                                onCycleStatus={() => handleCycleStatus(item)}
                                             />
                                         ))
                                         )}
@@ -259,17 +314,19 @@ const Budget = () => {
                                     </div>
                                 </div>
                             </div>
-                        </div> 
+                        </div>
                     </div>
                 </div>
                 {editItem && (
-                    <EditItem 
-                        item={editItem} 
+                    <EditItem
+                        item={editItem}
                         onSave={updateItem}
                         onClose={() => setEditItem(null)}
-                        onDelete={deleteItem} 
+                        onDelete={deleteItem}
+                        defaultPaid={editItem.forceKaparaModal}
                     />
                 )}
+
             </div>
             <button
                 onClick={() => setAddItem(true)}

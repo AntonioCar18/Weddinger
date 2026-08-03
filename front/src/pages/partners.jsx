@@ -4,6 +4,7 @@ import weddingerLogo from "../assets/logo.png";
 import PartnersBlock from "../components/partnesBlock";
 import { Building2, Camera, Utensils, Flower, Music, Users, LocateIcon, MapPin, BadgeCheck, Star, Phone } from 'lucide-react';
 import PartnersBlockPresentation from "../components/partnersBlockPresentation";
+import { useNavigate } from "react-router-dom";
 
 const Partners = () => {
 
@@ -11,6 +12,8 @@ const Partners = () => {
     const [searchPartner, setSearchPartner] = useState("");
     const [partners, setPartners] = useState([]);
     const [selectedCategory, setSelectedCategory] = useState("Sve");
+    const [selectedArea, setSelectedArea] = useState("Svi");
+    const navigate = useNavigate();
 
     const categoryIcons = {
         "Fotograf/Videograf": Camera,
@@ -41,18 +44,31 @@ const Partners = () => {
         getPartners();
     }, []);
 
+    const partnersInCategory = partners.data?.filter((partner) => 
+        selectedCategory === "Sve" || partner.partner_category === selectedCategory
+    ) ?? [];
+
+    const availableLocations = [...new Set(partnersInCategory.map((p) => p.partner_location))];
+
     const filteredPartners = partners.data?.filter((partner) => {
         const searchTerm = searchPartner.toLowerCase();
         const matchesCategory = selectedCategory === "Sve" || partner.partner_category === selectedCategory;
-        return partner.partner_name?.toLowerCase().includes(searchTerm) && matchesCategory;
+        const matchesArea = selectedArea === "Svi" || partner.partner_location === selectedArea;
+        return partner.partner_name?.toLowerCase().includes(searchTerm) && matchesCategory && matchesArea;
     }) || [];
+
+    useEffect(() => {
+        if (selectedArea !== "Svi" && !availableLocations.includes(selectedArea)) {
+            setSelectedArea("Svi");
+        }
+    }, [selectedCategory]);
  
     return (
         <div className="h-screen flex overflow-hidden bg-[#fcfbfa] relative">
             {isSidebarOpen && <div className="fixed inset-0 bg-black/40 backdrop-blur-xs z-30 lg:hidden" onClick={() => setIsSidebarOpen(false)} />}
                    
             <div className={`fixed inset-y-0 left-0 w-64 bg-white flex flex-col p-6 shadow-xl h-full border-r border-gray-100 z-40 lg:z-10 lg:static transform ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0 transition-transform duration-300 ease-in-out`}>
-                <div className="flex items-center justify-between lg:justify-center">
+                <div onClick={() => navigate("/dashboard")} className="cursor-pointer flex items-center justify-between lg:justify-center">
                     <img src={weddingerLogo} alt="Weddinger Logo" className="h-auto w-36 lg:w-44" />
                     <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden p-2 text-gray-500 hover:text-gray-800">
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
@@ -133,7 +149,7 @@ const Partners = () => {
                                 <PartnersBlock icon_partners={Music} title="Glazba/Pratnja/DJ" count={partners.music_partners} />
                             </div>
                         </div>
-                        <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
+                        <div className="flex flex-col lg:flex-row justify-between gap-6 w-full">
                             <div className="relative w-full lg:max-w-md group">
                                 <span className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
                                     <svg className="w-5 h-5 text-gray-400 group-focus-within:text-[#B8926A] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -147,6 +163,16 @@ const Partners = () => {
                                     value={searchPartner}
                                     onChange={(e) => setSearchPartner(e.target.value)}
                                 />
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <button onClick={() => setSelectedArea("Svi")} className={`cursor-pointer text-sm rounded-full px-5 py-2 ${selectedArea === "Svi" ? "bg-linear-to-r from-[#c39d76] to-[#8B6B47] text-white shadow-md" : "bg-gray-100 text-gray-600"} font-semibold`}>Sve</button>
+                               {availableLocations.map((location) => (
+                                    <button
+                                        key={location}
+                                        onClick={() => setSelectedArea(location)}
+                                        className={`cursor-pointer text-sm rounded-full px-5 py-2 ${selectedArea === location ? "bg-linear-to-r from-[#c39d76] to-[#8B6B47] text-white shadow-md" : "bg-gray-100 text-gray-600"} font-semibold`}
+                                    >{location}</button>
+                               ))}
                             </div>
                         </div>
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6 w-full items-start">
