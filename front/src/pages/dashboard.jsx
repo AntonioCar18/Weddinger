@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import Sidebar from "../components/sidebar";
 import weddingerLogo from "../assets/logo.png";
-import { Calendar, Dot, Heart, User2Icon, CheckCircle, FileText, Banknote, PlusCircle, User, UserPlus, FileCheck, BadgeEuro } from "lucide-react";
+import { Calendar, Dot, Heart, User2Icon, CheckCircle, FileText, Banknote, PlusCircle, User, UserPlus, FileCheck, BadgeEuro, Star } from "lucide-react";
 import DashboardComponents from "../components/dashboardComponents";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
@@ -10,6 +10,8 @@ import DashboardQuickAction from "../components/dashboardQuickAction";
 import AddGuest from "../components/addGuest";
 import AddTask from "../components/addTask";
 import { useQueryClient } from "@tanstack/react-query";
+import AddItem from "../components/addItem";
+import { useRef } from "react";
 
 const Dashboard = () => {
 
@@ -18,7 +20,9 @@ const Dashboard = () => {
   const [guestsInfo, setGuestsInfo] = useState(null);
   const [showAddGuestModal, setShowAddGuestModal] = useState(false);
   const [showAddTaskModal, setShowAddTaskModal] = useState(false);
+  const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [partners, setPartners] = useState([]);
+  const fileInputRef = useRef(null);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -202,6 +206,68 @@ const Dashboard = () => {
         }
     };
 
+  const newItem = async (itemData) => {
+        try {
+            const response = await fetch("/api/budget", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(itemData),
+                credentials: 'include'
+            });
+            if (response.ok) {
+                setShowAddItemModal(false);
+                queryClient.invalidateQueries(['budget']);
+            } else {
+                const errorData = await response.json();
+                alert(errorData.message || "Greška pri dodavanju.");
+            }
+        } catch (e) {
+            console.error("Greška:", e);
+            alert("Problem s povezivanjem na poslužitelj.");
+        }
+    };
+
+  const uploadFile = async (e) => {
+        const file = e.target.files?.[0];
+        e.target.value = "";
+        if (!file) return;
+
+        console.log("0dabrana datoteka:", file.name, file.size, file.type);
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+            const response = await fetch("/api/documents", {
+                method: "POST",
+                body: formData,
+                credentials: "include",
+            });
+            if (response.ok) {
+                console.log("Datoteka uspješno uplodana")
+                queryClient.invalidateQueries(['documents']); // Osvježava podatke o dokumentima nakon uploada
+            } else {
+                console.error("Grešak prilikom uploada")
+            }
+        } catch (error) {
+            console.error("Greška prilikom uploada:", error);
+        }
+    };
+
+  const advices = [
+    "Planirajte unaprijed kako biste izbjegli stres.",
+    "Komunicirajte otvoreno sa svojim partnerom o svim odlukama.",
+    "Ne zaboravite na male detalje koji čine dan posebnim.",
+    "Uživajte u svakom trenutku planiranja, to je dio vaše priče.",
+    "Postavite realan budžet i držite ga se.",
+    "Ne bojte se tražiti pomoć od prijatelja i obitelji.",
+    "Pazite na svoje zdravlje i dobrobit tijekom planiranja.",
+    "Odaberite dobavljače koji razumiju vašu viziju.",
+    "Ne zaboravite na fotografije, one će trajati vječno.",
+    "Uživajte u procesu i slavite svaki korak prema vašem velikom danu.",
+    "Zapamtite, u pitanju je Vaše vjenčanje i planirajte ga tako da Vi budete sretni."
+  ]
+
   return (
     <div className="h-dvh w-screen flex overflow-hidden bg-[#fcfbfa] relative">
       {isSidebarOpen && (
@@ -232,7 +298,7 @@ const Dashboard = () => {
       </div>
 
       <div className="flex flex-1 h-dvh bg-[#fcfbfa] overflow-auto">
-        <div className="flex flex-col w-full h-fit relative pb-10">
+        <div className="flex flex-col w-full h-fit relative pb-4">
           <div className="flex px-4 md:px-10 lg:px-16 pt-6 lg:pt-12 pb-6 items-center justify-between w-full lg:border-none border-gray-100 bg-white lg:bg-transparent">
             <button
               onClick={() => setIsSidebarOpen(true)}
@@ -250,7 +316,7 @@ const Dashboard = () => {
             </div>
           </div>
 
-          <div className="px-4 md:px-10 lg:px-16 py-4 flex flex-col lg:flex-row gap-8 lg:gap-6 h-fit pb-6 pt-4">
+          <div className="px-4 md:px-10 lg:px-16 flex flex-col lg:flex-row gap-8 lg:gap-6 h-fit pb-6 pt-4">
             <div className="relative w-full min-h-60 md:min-h-65 h-auto md:h-72 rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl">
               <div
                 className="absolute inset-0 bg-cover bg-no-repeat"
@@ -276,8 +342,12 @@ const Dashboard = () => {
                   <span className="text-[10px] md:text-sm font-semibold text-white/80 uppercase tracking-wider md:tracking-[0.2em] truncate">
                     {weddingInfo ? ` ${weddingInfo.partner_one} & ${weddingInfo.partner_two}` : ""}
                   </span>
-                  <span><Dot className="hidden md:block w-6 h-6 text-white/80 shrink-0" /></span>
-                  <span className="hidden md:block text-[10px] md:text-sm font-semibold text-white/80 uppercase tracking-[0.12em] md:tracking-[0.2em] truncate">{weddingInfo ? `${weddingInfo.wedding_location}` : ""}</span>
+                  {weddingInfo?.wedding_location && (
+                  <div className="flex items-center gap-2">
+                     <span><Dot className="hidden md:block w-6 h-6 text-white/80 shrink-0" /></span>
+                     <span className="hidden md:block text-[10px] md:text-sm font-semibold text-white/80 uppercase tracking-[0.12em] md:tracking-[0.2em] truncate">{weddingInfo ? `${weddingInfo.wedding_location}` : ""}</span>
+                  </div>
+                  )}
                 </div>
 
                 <h2 className="font-display font-bold italic text-xl sm:text-2xl md:text-3xl text-white leading-snug drop-shadow-sm line-clamp-2">
@@ -291,7 +361,7 @@ const Dashboard = () => {
                   <div className="flex flex-row items-center justify-between gap-3">
                     <div className="flex items-end gap-1.5 sm:gap-2 shrink-0">
                       <span className="font-display text-4xl sm:text-5xl md:text-6xl font-extrabold text-white leading-none">
-                        {daysUntilWedding ?? ""}
+                        {daysUntilWedding ?? "NaN"}
                       </span>
                       <span className="text-white/80 font-bold text-sm sm:text-base md:text-lg">dana</span>
                     </div>
@@ -374,18 +444,18 @@ const Dashboard = () => {
                 </div>
             </div>
           </div>
-          <div className="flex px-4 flex-col md:flex-row gap-4 md:px-10 lg:px-16 pb-6 pt-4 items-stretch justify-between w-full lg:bg-transparent">
+          <div className="flex px-4 flex-col md:flex-row gap-4 md:px-10 lg:px-16 pb-0 pt-4 items-stretch justify-between w-full lg:bg-transparent">
             <div className="flex flex-col w-full md:w-3/4 bg-white rounded-2xl shadow-sm hover:shadow-md border border-[#efe9e0] p-6 ">
                 <div className="flex justify-between w-full items-center">
-                    <h2 className="text-lg md:text-2xl font-bold p-2">Nadolazeći zadaci</h2>
+                    <h2 className="text-lg md:text-2xl font-bold">Nadolazeći zadaci</h2>
                     <div className="flex items-center gap-2">
                       <a href="/tasks" className="text-sm font-bold text-[#B8926A]">Svi zadaci</a>
                       <p className="hidden md:block text-sm font-bold text-[#B8926A]">→</p>
                     </div>
                 </div>
-                <div className="items-stretch flex flex-col w-full divide-y divide-gray-50 mt-4 ">
+                <div className="flex-1 items-stretch flex flex-col w-full divide-y divide-gray-50 mt-4 ">
                     {upcomingTasks.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center text-center w-full py-16 bg-white rounded-2xl border border-gray-100">
+                        <div className="flex-1 flex flex-col items-center justify-center text-center w-full py-16 bg-white rounded-2xl border border-gray-100">
                             <div className="w-14 h-14 rounded-full bg-[#B8926A]/10 flex items-center justify-center mb-4">
                                 <CheckCircle className="w-7 h-7 text-[#B8926A]" />
                             </div>
@@ -407,8 +477,8 @@ const Dashboard = () => {
                     )}
                 </div>
             </div>
-            <div className="flex flex-col md:w-1/4 gap-4 w-full">
-              <div className="flex flex-col w-full bg-white rounded-2xl shadow-sm hover:shadow-md border border-[#efe9e0] p-6">
+            <div className="flex flex-col md:w-1/4 gap-8 md:gap-4 w-full">
+              <div className="mt-4 md:mt-0 flex flex-col w-full bg-white rounded-2xl shadow-sm hover:shadow-md border border-[#efe9e0] p-6">
                 <h2 className="font-display text-lg font-bold text-gray-900 mb-4">Brze akcije</h2>
                 <div className="grid grid-cols-2 gap-3">
                     <DashboardQuickAction
@@ -424,26 +494,37 @@ const Dashboard = () => {
                     <DashboardQuickAction
                       icon={PlusCircle}
                       label="Dodaj dokument"
-                      onClick={() => navigate("/documents")}
+                      onClick={() => fileInputRef.current.click()}
                     />
                     <DashboardQuickAction
                       icon={BadgeEuro}
                       label="Dodaj trošak"
-                      onClick={() => navigate("/budget")}
+                      onClick={() => setShowAddItemModal(true)}
                     />
                 </div>
               </div>
-              <div className="flex flex-1 w-full bg-white rounded-2xl shadow-sm hover:shadow-md border border-[#efe9e0] p-6">
-                <div className="grid grid-cols-2 gap-4 w-full">
-
+              <div className="flex md:flex-1 w-full bg-linear-to-r from-[#c39d76] to-[#8B6B47] rounded-2xl shadow-sm hover:shadow-md border border-[#efe9e0] p-6">
+                <div className="flex flex-col w-full h-full items-center justify-center text-center">
+                    <div className="flex items-center justify-start w-full gap-2">
+                      <Star className="w-6 h-6 fill-white text-white" />
+                      <h2 className="font-display text-lg font-bold text-white">Dnevni savjeti</h2>
+                    </div>
+                    <p className="text-sm italic text-left text-white font-bold mt-4">{advices[Math.floor(Math.random() * advices.length)]}</p>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
+      <input
+        type="file"
+        ref={fileInputRef}
+        style={{ display: "none" }}
+        onChange={uploadFile}
+      />
       {showAddGuestModal && <AddGuest onSave={addGuest} onClose={() => setShowAddGuestModal(false)} />}
       {showAddTaskModal && <AddTask onSave={addTask} onClose={() => setShowAddTaskModal(false)} partners={partners} />}
+      {showAddItemModal && <AddItem onSave={newItem} onClose={() => setShowAddItemModal(false)} />}
     </div>
   );
 };

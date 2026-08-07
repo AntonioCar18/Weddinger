@@ -288,7 +288,7 @@ const Settings = () => {
                         </div>
                     </div>
 
-                    <div className="flex-1 flex flex-col px-4 md:px-10 lg:px-16 py-4 space-y-6 pb-6 pt-6">
+                    <div className="flex-1 flex flex-col px-4 md:px-10 lg:px-16 py-4 space-y-6 pb-6 pt-4">
                         <div className="flex flex-col bg-white rounded-2xl border border-[#efe9e0] shadow-sm hover:shadow-md transition-shadow duration-200 p-8 w-full">
                             <div className="flex items-center gap-4">
                                 <div className="flex bg-[#B8926A]/10 rounded-xl p-2.5">

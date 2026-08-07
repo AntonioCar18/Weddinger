@@ -15,6 +15,10 @@ from minio import Minio
 from minio.error import S3Error
 from fastapi import UploadFile, File
 from fastapi.responses import StreamingResponse
+import random
+import smtplib
+from email.mime.text import MIMEText
+from typing import Optional, List
 
 from database import takeFromBase, executeQuery
 
@@ -26,6 +30,67 @@ MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT")
 MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY")
 MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY")
 MINIO_BUCKET = os.getenv("MINIO_BUCKET")
+
+SMTP_HOST = os.getenv("SMTP_HOST")
+SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
+SMTP_USER = os.getenv("SMTP_USER")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
+SMTP_FROM = os.getenv("SMTP_FROM", SMTP_USER)
+
+BASELINE_TASKS = [
+    {"task_name": "Rezervacija lokacije", "category": "Prostor", "days_before": 300},
+    {"task_name": "Odabir fotografa", "category": "Ostalo", "days_before": 240},
+    {"task_name": "Odabir glazbe", "category": "Glazba", "days_before": 180},
+]
+
+TAG_TASKS = {
+    "crkveno": [{"task_name": "Dogovoriti termin vjenčanja u crkvi", "category": "Administracija", "days_before": 270}],
+    "otvoreno": [{"task_name": "Osigurati rezervni plan za slučaj kiše (šator/dvorana)", "category": "Prostor", "days_before": 200}],
+    "glazba": [{"task_name": "Rezervirati bend ili DJ-a i potpisati ugovor", "category": "Glazba", "days_before": 150}],
+    "foto": [{"task_name": "Dogovoriti fotografiranje uoči vjenčanja (engagement shoot)", "category": "Ostalo", "days_before": 120}],
+    "gosti_izvan": [{"task_name": "Pripremiti prijedloge smještaja za goste izvan grada", "category": "Ostalo", "days_before": 90}],
+}
+
+def send_email(to: str, subject: str, body: str):
+    msg = MIMEText(body)
+    msg["Subject"] = subject
+    msg["From"] = SMTP_FROM
+    msg["To"] = to
+
+    with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+        server.starttls()
+        server.login(SMTP_USER, SMTP_PASSWORD)
+        server.sendmail(SMTP_FROM, [to], msg.as_string())
+
+def build_starter_tasks(user_id: int, wedding_date_str: str, tags: list):
+    try:
+        wedding_date = datetime.datetime.strptime(wedding_date_str, "%Y-%m-%d").date()
+    except (ValueError, TypeError):
+        return
+
+    today = datetime.date.today()
+    min_due_date = today + timedelta(days=7)
+
+    task_list = list(BASELINE_TASKS)
+    for tag in tags:
+        task_list.extend(TAG_TASKS.get(tag, []))
+
+    for task in task_list:
+        due_date = wedding_date - timedelta(days=task["days_before"])
+        if due_date < min_due_date:
+            due_date = min_due_date
+
+        query = "INSERT INTO tasks (user_id, task_name, owner, category, priority, due_date, is_completed, notes) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);"
+        executeQuery(query, (
+            user_id,
+            task["task_name"],
+            "Oboje",
+            task["category"],
+            "Srednji",
+            due_date.isoformat(),
+            False,
+            None
+        ))
 
 # Konfiguracija
 SECRET_KEY = os.getenv("JWT_SECRET_KEY")
@@ -77,10 +142,6 @@ class LoginModel(BaseModel):
 class RegisterModel(BaseModel):
     email: str
     password: str
-    partner_one: str
-    partner_two: str
-    wedding_date: str = None
-    wedding_location: str = None
 
 class GuestModel(BaseModel):
     name: str
@@ -90,7 +151,7 @@ class GuestModel(BaseModel):
     phone: Optional[str] = None
     menu_type: str = "Standard"
     menu_type_plus_one: str = "Standard"
-    table_number: Optional[int] = None
+    table_id: Optional[int] = None
     notes: Optional[str] = None
 
 class TableModel(BaseModel):
@@ -141,6 +202,30 @@ class UpdateDateModel(BaseModel):
 class UpdateLocationModel(BaseModel):
     wedding_location: str
 
+class OnboardingModel(BaseModel):
+    partner_one: str
+    partner_two: str
+    email: str
+    partner_email: Optional[str] = None
+    wedding_date: Optional[str] = None
+    wedding_location: Optional[str] = None
+    engagement_date: str
+    onboarding_completed: bool = True
+    seed_tasks: bool = False
+    tags: Optional[List[str]] = []
+
+class ForgotPasswordModel(BaseModel):
+    email: str
+
+class ResetPasswordModel(BaseModel):
+    email: str
+    code: str
+    new_password: str
+
+class VerifyEmailModel(BaseModel):
+    email: str
+    code: str
+
 # --- Rute ---
 @app.post("/api/login")
 def login(login_data: LoginModel, response: Response):
@@ -160,7 +245,7 @@ def logout(response: Response):
 @app.get("/api/me")
 def get_me(current_user: dict = Depends(get_current_user)):
     user_id = current_user.get("sub")
-    user = takeFromBase("SELECT partner_one, partner_two, wedding_date, wedding_location, email, partner_email, engagement_date FROM users WHERE id = %s;", (user_id,))
+    user = takeFromBase("SELECT partner_one, partner_two, wedding_date, wedding_location, email, partner_email, engagement_date, onboarding_completed FROM users WHERE id = %s;", (user_id,))
     if not user:
         raise HTTPException(status_code=404, detail="Korisnik nije nađen")
     return {"user": user[0]}
@@ -234,14 +319,42 @@ def update_password(update_data: UpdatePasswordModel, current_user: dict = Depen
 
 @app.post("/api/register")
 def register(register_data: RegisterModel):
-    if takeFromBase("SELECT * FROM users WHERE email = %s;", (register_data.email,)):
-        raise HTTPException(status_code=400, detail="Korisnik već postoji")
-    
+    if takeFromBase("SELECT * FROM users WHERE email = %s OR partner_email = %s;", (register_data.email, register_data.email)):
+        raise HTTPException(status_code=400, detail="Ovaj email je već povezan s postojećim računom. Pokušajte se prijaviti.")
+
     hashed = pwd_context.hash(register_data.password)
-    query = "INSERT INTO users (email, password, partner_one, partner_two, wedding_date, wedding_location) VALUES (%s, %s, %s, %s, %s, %s);"
-    if not executeQuery(query, (register_data.email, hashed, register_data.partner_one, register_data.partner_two, register_data.wedding_date, register_data.wedding_location)):
+    code = f"{random.randint(0, 999999):06d}"
+    expires = datetime.datetime.utcnow() + timedelta(minutes=15)
+
+    query = "INSERT INTO users (email, password, verify_code, verify_code_expires) VALUES (%s, %s, %s, %s);"
+    if not executeQuery(query, (register_data.email, hashed, code, expires)):
         raise HTTPException(status_code=500, detail="Greška pri registraciji")
-    return {"message": "Uspješna registracija"}
+
+    try:
+        send_email(
+            to=register_data.email,
+            subject="Potvrdite svoj email - Weddinger",
+            body=f"Dobrodošli u Weddinger! Vaš kod za potvrdu emaila je: {code}\n\nVrijedi 15 minuta."
+        )
+    except Exception as e:
+        print(f"Greška pri slanju maila: {e}")
+
+    return {"message": "Registracija uspješna. Provjerite email za kod."}
+
+@app.post("/api/verify-email")
+def verify_email(data: VerifyEmailModel):
+    user = takeFromBase(
+        "SELECT id, verify_code, verify_code_expires FROM users WHERE email = %s;",
+        (data.email,)
+    )
+    if not user or user[0]['verify_code'] != data.code or user[0]['verify_code_expires'] < datetime.datetime.utcnow():
+        raise HTTPException(status_code=400, detail="Kod je netočan ili je istekao.")
+
+    executeQuery(
+        "UPDATE users SET email_verified = true, verify_code = NULL, verify_code_expires = NULL WHERE id = %s;",
+        (user[0]['id'],)
+    )
+    return {"message": "Email uspješno potvrđen."}
 
 @app.delete("/api/me")
 def delete_account(current_user: dict = Depends(get_current_user)):
@@ -252,6 +365,59 @@ def delete_account(current_user: dict = Depends(get_current_user)):
     else:
         raise HTTPException(status_code=500, detail="Greška pri brisanju računa")
 
+@app.post("/api/me/onboarding")
+def onboarding(onboarding_data: OnboardingModel, current_user: dict = Depends(get_current_user)):
+    user_id = current_user.get("sub")
+    wedding_date = onboarding_data.wedding_date or None
+    engagement_date = onboarding_data.engagement_date or None
+    wedding_location = onboarding_data.wedding_location or None
+    query = "UPDATE users SET partner_one = %s, partner_two = %s, email = %s, wedding_date = %s, wedding_location = %s, engagement_date = %s, onboarding_completed = true WHERE id = %s;"
+    success = executeQuery(query, (onboarding_data.partner_one, onboarding_data.partner_two, onboarding_data.email, wedding_date, wedding_location, engagement_date, user_id))
+
+    if not success:
+        raise HTTPException(status_code=500, detail="Greška pri završetku onboardinga")
+
+    if onboarding_data.seed_tasks and wedding_date:
+        build_starter_tasks(user_id, wedding_date, onboarding_data.tags or [])
+
+    return {"message": "Onboarding završen"}
+
+@app.post("/api/forgot-password")
+def forgot_password(data: ForgotPasswordModel):
+    user = takeFromBase("SELECT id FROM users WHERE email = %s OR partner_email = %s;", (data.email, data.email))
+    if user:
+        code = f"{random.randint(0, 999999):06d}"
+        expires = datetime.datetime.utcnow() + timedelta(minutes=15)
+        executeQuery(
+            "UPDATE users SET reset_code = %s, reset_code_expires = %s WHERE id = %s;",
+            (code, expires, user[0]['id'])
+        )
+        try:
+            send_email(
+                to=data.email,
+                subject="Kod za reset lozinke - Weddinger",
+                body=f"Vaš kod za reset lozinke je: {code}\n\nVrijedi 15 minuta.\n\nAko niste vi tražili reset lozinke, slobodno ignorirajte ovaj mail."
+            )
+        except Exception as e:
+            print(f"Greška pri slanju maila: {e}")
+    return {"message": "Ako email postoji u sustavu, poslali smo kod za reset lozinke."}
+
+@app.post("/api/reset-password")
+def reset_password(data: ResetPasswordModel):
+    user = takeFromBase(
+        "SELECT id, reset_code, reset_code_expires FROM users WHERE email = %s OR partner_email = %s;",
+        (data.email, data.email)
+    )
+    if not user or user[0]['reset_code'] != data.code or user[0]['reset_code_expires'] < datetime.datetime.utcnow():
+        raise HTTPException(status_code=400, detail="Kod je netočan ili je istekao.")
+
+    hashed = pwd_context.hash(data.new_password)
+    executeQuery(
+        "UPDATE users SET password = %s, reset_code = NULL, reset_code_expires = NULL WHERE id = %s;",
+        (hashed, user[0]['id'])
+    )
+    return {"message": "Lozinka je uspješno promijenjena."}
+    
 # Gosti
 
 @app.get("/api/guests")
@@ -273,8 +439,32 @@ def get_guests_numbers(current_user: dict = Depends(get_current_user)):
 
 @app.post("/api/guests")
 def add_guest(guest_data: GuestModel, current_user: dict = Depends(get_current_user)):
-    query = "INSERT INTO guests (user_id, name, plus_one, plus_one_name, status, phone, menu_type, menu_type_plus_one, table_number, notes) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s);"
-    success = executeQuery(query, (current_user.get("sub"), guest_data.name, guest_data.plus_one, guest_data.plus_one_name, guest_data.status, guest_data.phone, guest_data.menu_type, guest_data.menu_type_plus_one, guest_data.table_number, guest_data.notes))
+    user_id = current_user.get("sub")
+
+    table_number = None
+    if guest_data.table_id:
+        table = takeFromBase("SELECT table_number, capacity FROM tables WHERE id = %s AND user_id = %s", (guest_data.table_id, user_id))
+        if not table:
+            raise HTTPException(status_code=404, detail="Odabrani stol ne postoji")
+        table_number = table[0]['table_number']
+        table_capacity = table[0]['capacity']
+
+        guest_size = 1 + (1 if guest_data.plus_one else 0)
+        occupancy_data = takeFromBase(
+            "SELECT SUM(1 + CASE WHEN plus_one = true THEN 1 ELSE 0 END) as total FROM guests WHERE table_id = %s",
+            (guest_data.table_id,)
+        )
+        current_occupancy = occupancy_data[0]['total'] or 0
+
+        if (current_occupancy + guest_size) > table_capacity:
+            raise HTTPException(status_code=400, detail=f"Stol je popunjen! Kapacitet je {table_capacity}.")
+
+    query = "INSERT INTO guests (user_id, name, plus_one, plus_one_name, status, phone, menu_type, menu_type_plus_one, table_id, table_number, notes) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);"
+    success = executeQuery(query, (
+        user_id, guest_data.name, guest_data.plus_one, guest_data.plus_one_name,
+        guest_data.status, guest_data.phone, guest_data.menu_type, guest_data.menu_type_plus_one,
+        guest_data.table_id, table_number, guest_data.notes
+    ))
     return {"message": "Gost uspješno dodan"} if success else HTTPException(status_code=500)
 
 @app.delete("/api/guests/{guest_id}")
@@ -284,8 +474,32 @@ def delete_guest(guest_id: int, current_user: dict = Depends(get_current_user)):
 
 @app.put("/api/guests/{guest_id}")
 def update_guest(guest_id: int, guest_data: GuestModel, current_user: dict = Depends(get_current_user)):
-    query = "UPDATE guests SET name = %s, plus_one = %s, plus_one_name = %s, status = %s, phone = %s, menu_type = %s, menu_type_plus_one = %s, table_number = %s, notes = %s WHERE id = %s AND user_id = %s;"
-    success = executeQuery(query, (guest_data.name, guest_data.plus_one, guest_data.plus_one_name, guest_data.status, guest_data.phone, guest_data.menu_type, guest_data.menu_type_plus_one, guest_data.table_number, guest_data.notes, guest_id, current_user.get("sub")))
+    user_id = current_user.get("sub")
+
+    table_number = None
+    if guest_data.table_id:
+        table = takeFromBase("SELECT table_number, capacity FROM tables WHERE id = %s AND user_id = %s", (guest_data.table_id, user_id))
+        if not table:
+            raise HTTPException(status_code=404, detail="Odabrani stol ne postoji")
+        table_number = table[0]['table_number']
+        table_capacity = table[0]['capacity']
+
+        guest_size = 1 + (1 if guest_data.plus_one else 0)
+        occupancy_data = takeFromBase(
+            "SELECT SUM(1 + CASE WHEN plus_one = true THEN 1 ELSE 0 END) as total FROM guests WHERE table_id = %s AND id != %s",
+            (guest_data.table_id, guest_id)
+        )
+        current_occupancy = occupancy_data[0]['total'] or 0
+
+        if (current_occupancy + guest_size) > table_capacity:
+            raise HTTPException(status_code=400, detail=f"Stol je popunjen! Kapacitet je {table_capacity}.")
+
+    query = "UPDATE guests SET name = %s, plus_one = %s, plus_one_name = %s, status = %s, phone = %s, menu_type = %s, menu_type_plus_one = %s, table_id = %s, table_number = %s, notes = %s WHERE id = %s AND user_id = %s;"
+    success = executeQuery(query, (
+        guest_data.name, guest_data.plus_one, guest_data.plus_one_name, guest_data.status,
+        guest_data.phone, guest_data.menu_type, guest_data.menu_type_plus_one,
+        guest_data.table_id, table_number, guest_data.notes, guest_id, user_id
+    ))
     return {"message": "Ažurirano"} if success else HTTPException(status_code=500)
 
 @app.put("/api/guests/{guest_id}/move")
@@ -294,17 +508,18 @@ def move_guest(guest_id: int, data: MoveGuestRequest, current_user: dict = Depen
 
     if data.table_id is None:
         success = executeQuery(
-            "UPDATE guests SET table_id = NULL WHERE id = %s AND user_id = %s", 
+            "UPDATE guests SET table_id = NULL, table_number = NULL WHERE id = %s AND user_id = %s", 
             (guest_id, user_id)
         )
         if not success:
             raise HTTPException(status_code=500, detail="Greška pri uklanjanju gosta")
         return {"success": True, "table_id": None}
 
-    table = takeFromBase("SELECT id, capacity FROM tables WHERE id = %s AND user_id = %s", (data.table_id, user_id))
+    table = takeFromBase("SELECT id, capacity, table_number FROM tables WHERE id = %s AND user_id = %s", (data.table_id, user_id))
     if not table:
         raise HTTPException(status_code=404, detail="Stol nije pronađen")
     table_capacity = table[0]['capacity']
+    table_number = table[0]['table_number']
 
     guest = takeFromBase("SELECT plus_one FROM guests WHERE id = %s AND user_id = %s", (guest_id, user_id))
     if not guest:
@@ -324,11 +539,11 @@ def move_guest(guest_id: int, data: MoveGuestRequest, current_user: dict = Depen
         raise HTTPException(status_code=400, detail=f"Stol je popunjen! Kapacitet je {table_capacity}.")
 
     success = executeQuery(
-        "UPDATE guests SET table_id = %s WHERE id = %s AND user_id = %s", 
-        (data.table_id, guest_id, user_id)
+        "UPDATE guests SET table_id = %s, table_number = %s WHERE id = %s AND user_id = %s", 
+        (data.table_id, table_number, guest_id, user_id)
     )
     
-    return {"success": True, "table_id": data.table_id}
+    return {"success": True, "table_id": data.table_id, "table_number": table_number}
 
 # Stolovi
 
@@ -344,7 +559,15 @@ def add_table(table_data: TableModel, current_user: dict = Depends(get_current_u
 
 @app.get("/api/tables")
 def get_tables(current_user: dict = Depends(get_current_user)):
-    tables = takeFromBase("SELECT * FROM tables WHERE user_id = %s ORDER BY table_number ASC;", (current_user.get("sub"),))
+    tables = takeFromBase("""
+        SELECT t.*, 
+               COALESCE(SUM(1 + CASE WHEN g.plus_one = true THEN 1 ELSE 0 END), 0) AS current_occupancy
+        FROM tables t
+        LEFT JOIN guests g ON g.table_id = t.id
+        WHERE t.user_id = %s
+        GROUP BY t.id
+        ORDER BY t.table_number ASC;
+    """, (current_user.get("sub"),))
     return tables if tables is not None else []
 
 @app.put("/api/tables/{table_id}")
@@ -470,7 +693,8 @@ def get_partners():
         "foto_video_partners": len([p for p in partners if p['partner_category'] == 'Fotograf/Videograf']) if partners else 0,
         "catering_partners": len([p for p in partners if p['partner_category'] == 'Catering/Vjenčanje']) if partners else 0,
         "flower_partners": len([p for p in partners if p['partner_category'] == 'Cvijeće/Dekoracije']) if partners else 0,
-        "music_partners": len([p for p in partners if p['partner_category'] == 'Glazba/Pratnja/DJ']) if partners else 0
+        "music_partners": len([p for p in partners if p['partner_category'] == 'Glazba/Pratnja/DJ']) if partners else 0,
+        "accommodation_partners": len([p for p in partners if p['partner_category'] == 'Smještaj']) if partners else 0      
     }
 
 

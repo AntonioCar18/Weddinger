@@ -81,7 +81,7 @@ const AddTable = ({ onClose, onSave }) => {
                         type="submit"
                         className="px-7 py-3 bg-linear-to-br from-[#c39d76] to-[#8B6B47] text-white font-semibold rounded-xl shadow-md shadow-[#B8926A]/20 hover:shadow-lg active:scale-97 transition-all duration-200 cursor-pointer"
                     >
-                        Spremi stol
+                        Spremi
                     </button>
                 </div>
             </form>

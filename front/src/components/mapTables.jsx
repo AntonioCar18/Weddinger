@@ -1,8 +1,11 @@
 import React from "react";
 import TableCard from "./cardTable";
+import {useState} from "react";
+import ErrorModal from "./errorModal";
 
 const WeddingMap = ({ tables, allGuests, onDrop, onRemoveGuest, onEditTable }) => {
     const handleDragOver = (e) => e.preventDefault();
+    const [errorOccupancyModalOpen, setErrorOccupancyModalOpen] = useState(false);
 
     const getOccupancy = (tableId) => {
         return allGuests
@@ -31,15 +34,22 @@ const WeddingMap = ({ tables, allGuests, onDrop, onRemoveGuest, onEditTable }) =
                                 const guestSize = 1 + (guest?.plus_one ? 1 : 0);
 
                                 if (occupancy + guestSize > table.capacity) {
-                                    alert(`Stol ${table.table_number} je popunjen.`);
+                                    setErrorOccupancyModalOpen(true);
                                     return;
                                 }
                                 onDrop(e, table.id);
                             }}
+                            tableId={table.id}
                         />
                     </div>
                 );
             })}
+            {errorOccupancyModalOpen && (
+                <ErrorModal
+                    onCancel={() => setErrorOccupancyModalOpen(false)}
+                    desc="Nije moguće smjestiti gosta za stol jer bi to premašilo kapacitet stola. Molimo da pokušate smjestiti gosta za neki drugi stol ili uklonite nekog gosta sa ovog stola kako biste napravili mjesta."
+                />
+            )}
         </div>
     );
 };

@@ -1,7 +1,8 @@
 import { X, UserPlus } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const AddGuest = ({ onClose, onSave }) => {
+    const [tables, setTables] = useState([]);
     const [formData, setFormData] = useState({
         name: "",
         plus_one: false,
@@ -9,7 +10,7 @@ const AddGuest = ({ onClose, onSave }) => {
         phone: "",
         menu_type: "Standard",
         menu_type_plus_one: "Standard",
-        table_number: "",
+        table_id: "",
         notes: ""
     });
 
@@ -27,7 +28,7 @@ const AddGuest = ({ onClose, onSave }) => {
 
         const payload = {
             ...formData,
-            table_number: formData.table_number ? parseInt(formData.table_number, 10) : null,
+            table_id: formData.table_id ? parseInt(formData.table_id, 10) : null,
             plus_one_name: formData.plus_one ? formData.plus_one_name : ""
         };
         onSave(payload);
@@ -39,6 +40,22 @@ const AddGuest = ({ onClose, onSave }) => {
         backgroundPosition: 'right 1rem center',
         backgroundSize: '1em'
     };
+
+    const getTables = async () => {
+        try {
+            const response = await fetch("/api/tables", { method: "GET", credentials: "include" });
+            if (!response.ok) throw new Error("Greška pri učitavanju stolova");
+            const data = await response.json();
+            setTables(data);
+        } catch (error) {
+            console.error("Greška pri učitavanju podataka:", error);
+        }
+    };
+    useEffect(() => {
+        getTables();
+    }, []);
+
+    const tablesLength = tables.length;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 overflow-y-auto">
@@ -104,17 +121,25 @@ const AddGuest = ({ onClose, onSave }) => {
                         </div>
 
                         <div className="flex flex-col gap-1.5">
-                            <label className="text-sm font-semibold text-gray-600">Broj stola</label>
-                            <input
+                            <label className="md:hidden text-sm font-semibold text-gray-600">Br. stola (pop./kap.)</label>
+                            <label className="hidden md:block text-sm font-semibold text-gray-600">Broj stola (pop./kap.)</label>
+                            <select
                                 type="number"
-                                name="table_number"
-                                disabled
-                                readOnly
-                                value={formData.table_number}
+                                name="table_id"
+                                disabled={tablesLength === 0}
+                                value={formData.table_id}
                                 onChange={handleChange}
-                                placeholder="Dodjeljuje se"
-                                className="w-full h-12 px-4 bg-gray-50 border border-gray-200 rounded-xl text-gray-400 placeholder-gray-400 outline-hidden transition cursor-not-allowed [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                            />
+                                style={selectArrowStyle}
+                                placeholder="Odaberi stol iz padajućeg izbornika.."
+                                className="w-full h-12 px-4 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#B8926A]/20 focus:border-[#B8926A] text-gray-700 outline-hidden transition cursor-pointer appearance-none"
+                            >
+                                <option value="">Odaberi stol</option>
+                                {tables.map((t) => (
+                                    <option key={t.id} value={t.id}>
+                                        Stol {t.table_number} ({t.current_occupancy}/{t.capacity})
+                                    </option>
+                                ))}
+                            </select>
                         </div>
                     </div>
 

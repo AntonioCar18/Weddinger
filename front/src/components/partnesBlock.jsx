@@ -6,7 +6,7 @@ const PartnersBlock = ({ title, count, icon_partners }) => {
         <div className="bg-white p-8 rounded-lg shadow">
             <div className="flex items-center gap-3">
                 {Icon && <Icon className="w-4 h-4 text-[#8B6B47] shrink-0" />}
-                <h2 className="min-w-0 flex-1 text-[12px] lg:text-[12px] text-gray-500 font-medium uppercase tracking-wider whitespace-normal wrap-break-word line-clamp-2">
+                <h2 className="min-w-0 flex-1 text-[12px] lg:text-[12px] text-gray-500 font-medium uppercase tracking-wider truncate">
                     {title}
                 </h2>
             </div>

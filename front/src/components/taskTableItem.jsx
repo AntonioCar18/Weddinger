@@ -52,7 +52,7 @@ const TaskTableItem = ({ task, deleteTask, changeTaskStatus, updateTask, partner
                         </div>
                         <div className="flex gap-1 items-center">
                             <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                            <p className="text-gray-500 text-xs">{task.due_date}</p>
+                            <p className="text-gray-500 text-xs whitespace-nowrap">{task.due_date}</p>
                         </div>
                         {task.owner && (
                             <div className="flex gap-1 items-center">

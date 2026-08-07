@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
 import weddingerLogo from "../assets/logo.png";
 import PartnersBlock from "../components/partnesBlock";
-import { Building2, Camera, Utensils, Flower, Music, Users, LocateIcon, MapPin, BadgeCheck, Star, Phone } from 'lucide-react';
+import { Building2, Camera, Utensils, Flower, Music, Users, LocateIcon, MapPin, BadgeCheck, Star, Phone, House } from 'lucide-react';
 import PartnersBlockPresentation from "../components/partnersBlockPresentation";
 import { useNavigate } from "react-router-dom";
+import { Search } from "lucide-react"
 
 const Partners = () => {
 
@@ -20,6 +21,7 @@ const Partners = () => {
         "Catering/Vjenčanje": Utensils,
         "Cvijeće/Dekoracije": Flower,
         "Glazba/Pratnja/DJ": Music,
+        "Smještaj": House
     };
 
     const defaultIcon = Building2;
@@ -89,7 +91,7 @@ const Partners = () => {
                         </div>
                     </div>
 
-                    <div className="flex-1 flex flex-col px-4 md:px-10 lg:px-16 py-4 space-y-6 pb-6 pt-6">
+                    <div className="flex-1 flex flex-col px-4 md:px-10 lg:px-16 py-4 space-y-6 pb-6 pt-4">
                         <div
                             onClick={() => setSelectedCategory("Sve")}
                             className={`cursor-pointer bg-white rounded-lg shadow lg:hidden ${selectedCategory === "Sve" ? "border-2 border-[#B8926A]" : ""}`}
@@ -108,7 +110,7 @@ const Partners = () => {
                         </div>
                         
 
-                        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 lg:gap-6 w-full">
+                        <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 lg:gap-6 w-full">
                             <div
                             onClick={() => setSelectedCategory("Sve")}
                             className={`cursor-pointer bg-white p-8 rounded-lg shadow hidden display lg:block ${selectedCategory === "Sve" ? "border-2 border-[#B8926A]" : ""}`}
@@ -147,6 +149,12 @@ const Partners = () => {
                                 className={`cursor-pointer bg-white rounded-lg ${selectedCategory === "Glazba/Pratnja/DJ" ? "border-2 border-[#B8926A]" : ""}`}
                             >
                                 <PartnersBlock icon_partners={Music} title="Glazba/Pratnja/DJ" count={partners.music_partners} />
+                            </div>
+                            <div
+                                onClick={() => setSelectedCategory("Smještaj")}
+                                className={`cursor-pointer bg-white rounded-lg ${selectedCategory === "Smještaj" ? "border-2 border-[#B8926A]" : ""}`}
+                            >
+                                <PartnersBlock icon_partners={House} title="Smještaj/Prostor" count={partners.accommodation_partners} />
                             </div>
                         </div>
                         <div className="flex flex-col lg:flex-row justify-between gap-6 w-full">
@@ -191,7 +199,22 @@ const Partners = () => {
                                         />
                                     ))
                             ) : (
-                                <p className="text-gray-500">Pretraženi partneri nisu pronađeni.</p>
+                                <div className="col-span-2 lg:col-span-4 bg-white rounded-2xl border border-[#efe9e0] shadow-sm p-10 flex flex-col items-center justify-center text-center gap-3">
+                                    <div className="p-3 bg-[#B8926A]/10 rounded-xl text-[#8B6B47]">
+                                        <Search size={24} strokeWidth={2.5} />
+                                    </div>
+                                    <h3 className="text-lg font-bold text-gray-800">Nema rezultata</h3>
+                                    <p className="text-sm text-gray-500 max-w-sm">
+                                        Nismo pronašli partnere za zadani pojam pretrage. Pokušajte s drugim nazivom ili kategorijom.
+                                    </p>
+                                    <p className="text-[12px] text-gray-500 max-w-sm">
+                                        Znate nekoga tko bi se htio pridružiti našoj listi partnera? Neka nam se jave na{" "}
+                                        <a href="mailto:info@4solutions.hr" className="text-[#8B6B47] font-semibold hover:underline">
+                                            info@4solutions.hr
+                                        </a>{" "}
+                                        i rado ćemo im pomoći da se pridruže.
+                                    </p>
+                                </div>
                             )}
                         </div>
                     </div>

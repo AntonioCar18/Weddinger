@@ -151,7 +151,7 @@ const Documents = () => {
                         </button>
                     </div>
 
-                    <div className="px-4 md:px-10 lg:px-16 py-4 flex flex-col lg:flex-row gap-8 lg:gap-6 h-fit pb-6 pt-6">
+                    <div className="px-4 md:px-10 lg:px-16 py-4 flex flex-col lg:flex-row gap-8 lg:gap-6 h-fit pb-6 pt-4">
                         <div className="flex flex-col gap-6 w-full">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
                                 <DocumentBlock
@@ -235,7 +235,6 @@ const Documents = () => {
                 <DeleteModal
                     onCancel={() => setShowDeleteModal(false)}
                     onDelete={() => {
-                        // Assuming you have a selected document ID to delete
                         const selectedDocumentId = documentResponse.data[0]?.id; // Replace with actual logic to get the selected document ID
                         if (selectedDocumentId) {
                             deleteFile(selectedDocumentId);

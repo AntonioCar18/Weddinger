@@ -1,7 +1,8 @@
 import { X, Pencil } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const EditGuest = ({ guest, onClose, onSave }) => {
+    const [tables, setTables] = useState([]);
     const [formData, setFormData] = useState({
         name: guest.name || "",
         plus_one: guest.plus_one || false,
@@ -9,10 +10,26 @@ const EditGuest = ({ guest, onClose, onSave }) => {
         phone: guest.phone || "",
         menu_type: guest.menu_type || "Standard",
         menu_type_plus_one: guest.menu_type_plus_one || "Standard",
-        table_number: guest.table_number || "",
+        table_id: guest.table_id || "",
         notes: guest.notes || "",
         status: guest.status || "Na čekanju"
     });
+
+    const getTables = async () => {
+        try {
+            const response = await fetch("/api/tables", { method: "GET", credentials: "include" });
+            if (!response.ok) throw new Error("Greška pri učitavanju stolova");
+            const data = await response.json();
+            setTables(data);
+        } catch (error) {
+            console.error("Greška pri učitavanju podataka:", error);
+        }
+    };
+    useEffect(() => {
+        getTables();
+    }, []);
+
+    const tablesLength = tables.length;
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -28,7 +45,7 @@ const EditGuest = ({ guest, onClose, onSave }) => {
 
         const payload = {
             ...formData,
-            table_number: formData.table_number !== "" ? parseInt(formData.table_number, 10) : null,
+            table_id: formData.table_id ? parseInt(formData.table_id, 10) : null,
             plus_one_name: formData.plus_one ? formData.plus_one_name : ""
         };
 
@@ -45,7 +62,7 @@ const EditGuest = ({ guest, onClose, onSave }) => {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 overflow-y-auto">
             <form onSubmit={handleSubmit} className="bg-white flex flex-col w-full max-w-lg p-8 shadow-2xl rounded-2xl my-auto border border-gray-100">
-                <div className="flex items-center justify-between mb-6 pb-5 border-b border-gray-100">
+                <div className="flex items-center justify-between mb-6 pb-5 border-b border-gray-200">
                     <div className="flex items-center gap-3">
                         <div className="p-2.5 bg-[#B8926A]/10 rounded-xl text-[#8B6B47]">
                             <Pencil size={20} strokeWidth={2.5} />
@@ -106,17 +123,23 @@ const EditGuest = ({ guest, onClose, onSave }) => {
                         </div>
 
                         <div className="flex flex-col gap-1.5">
-                            <label className="text-sm font-semibold text-gray-600">Broj stola</label>
-                            <input
-                                type="number"
-                                disabled
-                                readOnly
-                                name="table_number"
-                                value={formData.table_number}
+                            <label className="md:hidden text-sm font-semibold text-gray-600">Br. stola (pop./kap.)</label>
+                            <label className="hidden md:block text-sm font-semibold text-gray-600">Broj stola (pop./kap.)</label>
+                            <select
+                                name="table_id"
+                                disabled={tablesLength === 0}
+                                value={formData.table_id}
                                 onChange={handleChange}
-                                placeholder="Dodjeljuje se"
-                                className="w-full h-12 px-4 bg-gray-50 border border-gray-200 rounded-xl text-gray-400 placeholder-gray-400 outline-hidden transition cursor-not-allowed [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                            />
+                                style={selectArrowStyle}
+                                className="w-full h-12 px-4 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#B8926A]/20 focus:border-[#B8926A] text-gray-700 outline-hidden transition cursor-pointer appearance-none"
+                            >
+                                <option value="">Odaberi stol</option>
+                                {tables.map((t) => (
+                                    <option key={t.id} value={t.id}>
+                                        Stol {t.table_number} ({t.current_occupancy}/{t.capacity})
+                                    </option>
+                                ))}
+                            </select>
                         </div>
                     </div>
 

@@ -31,6 +31,8 @@ const Tasks = () => {
     const [tables, setTables] = useState([]);
     const [activeSuggestions, setActiveSuggestions] = useState([]);
     const queryClient = useQueryClient();
+    const itemsPerPage = 4;
+    const [currentPage, setCurrentPage] = useState(1); 
 
     const { data: guestsData } = useQuery({
         queryKey: ['guests'],
@@ -66,8 +68,11 @@ const Tasks = () => {
     });
 
     const tasks = tasksData || [];
+    const filteredTasks = selectedCategory === "Sve" ? tasks : tasks.filter(task => task.category === selectedCategory);
     const budgetData = queryData?.data.length || 0;
     const totalGuests = (guestsData?.length || 0) + (guestsData?.filter(guest => guest.plus_one === true).length || 0);
+    const totalPages = Math.ceil(filteredTasks.length / itemsPerPage);
+    const paginatedTasks = filteredTasks.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     useEffect(() => {
         if (isLoading && tasks.length === 0) return;
@@ -113,6 +118,10 @@ const Tasks = () => {
         fetchTables();
     }, []);
 
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [selectedCategory]);
+
     const newTask = async (taskData) => {
         const response = await fetch("/api/tasks", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify(taskData) });
         if (response.ok) {
@@ -139,8 +148,6 @@ const Tasks = () => {
         queryClient.invalidateQueries(['tasksSummary']);
         queryClient.invalidateQueries(['tasks']);
     };
-
-    const filteredTasks = selectedCategory === "Sve" ? tasks : tasks.filter((task) => task.category === selectedCategory);
 
     const getCategoryIcon = (category) => {
         switch (category) {
@@ -190,7 +197,7 @@ const Tasks = () => {
                         </button>
                     </div>
 
-                    <div className="px-4 md:px-10 lg:px-16 py-4 flex flex-col lg:flex-row gap-8 lg:gap-6 h-fit pb-6 pt-6">
+                    <div className="px-4 md:px-10 lg:px-16 py-4 flex flex-col lg:flex-row gap-8 lg:gap-6 h-fit pb-6 pt-4">
                         
                         <div className="flex flex-col rounded-2xl bg-white border border-[#efe9e0] justify-center shadow-sm hover:shadow-xl transition-shadow duration-200 lg:w-1/3 p-8">
                             <div className="flex items-center gap-3">
@@ -200,7 +207,7 @@ const Tasks = () => {
                         
                         <div className="flex flex-col rounded-2xl bg-white border border-[#efe9e0] shadow-sm hover:shadow-xl transition-shadow duration-200 lg:w-1/3 p-8">
                             <h2 className='font-display text-xl text-gray-900 mb-7 font-bold'>Pregled po kategorijama</h2>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-8 gap-y-6">
                                 {tasks.length === 0 ? (
                                     <div className="sm:col-span-2 flex flex-col items-center text-center py-10">
                                         <div className="w-12 h-12 rounded-full bg-[#B8926A]/10 flex items-center justify-center mb-3">
@@ -267,7 +274,7 @@ const Tasks = () => {
                                 </div>
                             ) : (
                                 <div className="divide-y divide-gray-100">
-                                    {Array.isArray(filteredTasks) && filteredTasks.map((task) => (
+                                    {Array.isArray(paginatedTasks) && paginatedTasks.map((task) => (
                                         <div key={task.task_id} className="group transition-all hover:bg-gray-50/50 rounded-xl">
                                             <TaskTableItem task={task} deleteTask={deleteTask} changeTaskStatus={changeTaskStatus} updateTask={updateTask} partners={partners} />
                                         </div>
@@ -275,7 +282,31 @@ const Tasks = () => {
                                 </div>
                             )}
                         </div>
-                    </div>
+                        {totalPages > 1 && (
+                            <div className="flex justify-between items-center bg-white rounded-2xl shadow-sm border border-[#efe9e0] px-6 py-4">
+                                <span className="text-sm text-gray-500 font-medium">
+                                    Stranica <span className="font-semibold text-gray-800">{currentPage}</span> od <span className="font-semibold text-gray-800">{totalPages}</span>
+                                </span>
+
+                                <div className="flex gap-2">
+                                    <button
+                                        disabled={currentPage === 1}
+                                        onClick={() => setCurrentPage(prev => prev - 1)}
+                                        className="px-4 py-2 border border-[#efe9e0] rounded-xl text-sm font-semibold bg-white text-gray-700 hover:bg-gray-50 hover:border-[#B8926A]/30 disabled:opacity-40 disabled:hover:bg-white disabled:hover:border-[#efe9e0] disabled:cursor-not-allowed transition-all duration-200 cursor-pointer active:scale-97"
+                                    >
+                                        Prethodna
+                                    </button>
+                                    <button
+                                        disabled={currentPage === totalPages}
+                                        onClick={() => setCurrentPage(prev => prev + 1)}
+                                        className="px-4 py-2 border border-[#efe9e0] rounded-xl text-sm font-semibold bg-white text-gray-700 hover:bg-gray-50 hover:border-[#B8926A]/30 disabled:opacity-40 disabled:hover:bg-white disabled:hover:border-[#efe9e0] disabled:cursor-not-allowed transition-all duration-200 cursor-pointer active:scale-97"
+                                    >
+                                        Sljedeća
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div> 
                 </div>
             </div>
             <button onClick={() => setIsAddTaskOpen(true)} className="lg:hidden fixed bottom-8 right-6 bg-[#B8926A] text-white p-4 rounded-full shadow-lg shadow-[#B8926A]/40 active:scale-95 transition-all duration-200 z-40 flex items-center justify-center cursor-pointer">

@@ -10,6 +10,9 @@ import Tasks from "./pages/tasks";
 import Partners from "./pages/partners";
 import Settings from "./pages/settings";
 import Documents from "./pages/documents";
+import Onboarding from "./pages/onboarding";
+import Privacy from "./pages/privacy";
+import Terms from "./pages/terms";
 
 // 2. Kreiraj instancu klijenta izvan komponente da se ne re-kreira kod svakog rendera
 export const queryClient = new QueryClient({
@@ -25,7 +28,10 @@ const HomeRedirect = () => <Navigate to="/login" replace />;
 const originalFetch = window.fetch;
 window.fetch = async (...args) => {
   const response = await originalFetch(...args);
-  if (response.status === 401) {
+  const url = typeof args[0] === "string" ? args[0] : args[0]?.url || "";
+  const isAuthRoute = url.includes("/api/login") || url.includes("/api/register");
+
+  if (response.status === 401 && !isAuthRoute) {
     queryClient.clear();
     window.location.href = "/login";
   }
@@ -50,6 +56,9 @@ function App() {
             <Route path="/partners" element={<Partners />} />
             <Route path="/documents" element={<Documents />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/onboarding" element={<Onboarding />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

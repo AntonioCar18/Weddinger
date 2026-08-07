@@ -10,6 +10,7 @@ import { useQuery } from '@tanstack/react-query';
 import { UsersRound } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import DeleteModal from "../components/deleteModal";
+import ErrorModal from "../components/errorModal";
 
 const Guests = () => {
     const navigate = useNavigate();
@@ -20,6 +21,9 @@ const Guests = () => {
     const [menuFilter, setMenuFilter] = useState("Svi");
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [deleteModalOpen, setDeleteModalOpen] = useState(null);
+    const [errorModalOpen, setErrorModalOpen] = useState(false);
+    const [errorAddModalOpen, setErrorAddModalOpen] = useState(false);
+    const [errorDeleteModalOpen, setErrorDeleteModalOpen] = useState(false);
 
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 7;
@@ -65,7 +69,7 @@ const Guests = () => {
                 refetch();
             } else {
                 const errorData = await response.json();
-                alert(errorData.message || "Došlo je do greške prilikom dodavanja gosta.");
+                setErrorAddModalOpen(true);
             }
         } catch (error) {
             console.error("Greška pri slanju:", error);
@@ -107,7 +111,7 @@ const Guests = () => {
                 refetch();
             } else {
                 const errorData = await response.json();
-                alert(errorData.message || "Došlo je do greške prilikom brisanja gosta.");
+                setErrorDeleteModalOpen(true);
             }
         } catch (error) {
             console.error("Greška pri brisanju:", error);
@@ -173,7 +177,7 @@ const Guests = () => {
                 refetch();
             } else {
                 const errorData = await response.json();
-                alert(errorData.message || "Došlo je do greške prilikom ažuriranja gosta.");
+                setErrorModalOpen(true);
             }
         } catch (error) {
             console.error("Greška pri ažuriranju gosta:", error);
@@ -480,23 +484,23 @@ const Guests = () => {
                 </div>
 
                 {totalPages > 1 && (
-                    <div className="flex justify-between items-center bg-white border border-gray-100 rounded-2xl px-6 py-4 shadow-xs mt-4 pb-6">
+                    <div className="flex justify-between items-center bg-white rounded-2xl shadow-sm border border-[#efe9e0] px-6 py-4">
                         <span className="text-sm text-gray-500 font-medium">
                             Stranica <span className="font-semibold text-gray-800">{currentPage}</span> od <span className="font-semibold text-gray-800">{totalPages}</span>
                         </span>
-                        
+
                         <div className="flex gap-2">
                             <button
                                 disabled={currentPage === 1}
                                 onClick={() => setCurrentPage(prev => prev - 1)}
-                                className="px-4 py-2 border border-gray-200 rounded-xl text-sm font-semibold bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 shadow-2xs cursor-pointer active:scale-98"
+                                className="px-4 py-2 border border-[#efe9e0] rounded-xl text-sm font-semibold bg-white text-gray-700 hover:bg-gray-50 hover:border-[#B8926A]/30 disabled:opacity-40 disabled:hover:bg-white disabled:hover:border-[#efe9e0] disabled:cursor-not-allowed transition-all duration-200 cursor-pointer active:scale-97"
                             >
                                 Prethodna
                             </button>
                             <button
                                 disabled={currentPage === totalPages}
                                 onClick={() => setCurrentPage(prev => prev + 1)}
-                                className="px-4 py-2 border border-gray-200 rounded-xl text-sm font-semibold bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 shadow-2xs cursor-pointer active:scale-98"
+                                className="px-4 py-2 border border-[#efe9e0] rounded-xl text-sm font-semibold bg-white text-gray-700 hover:bg-gray-50 hover:border-[#B8926A]/30 disabled:opacity-40 disabled:hover:bg-white disabled:hover:border-[#efe9e0] disabled:cursor-not-allowed transition-all duration-200 cursor-pointer active:scale-97"
                             >
                                 Sljedeća
                             </button>
@@ -534,7 +538,28 @@ const Guests = () => {
                     desc="Jeste li sigurni da želite izbrisati ovog gosta? Ova akcija se ne može poništiti."
                     deleteText="Obriši gosta"
                 />
-            )}        
+            )}     
+
+            {errorModalOpen && (
+                <ErrorModal
+                    onCancel={() => setErrorModalOpen(false)}
+                    desc="Došlo je do pogreške prilikom ažuriranja gosta. Molimo pokušajte ponovo, moguće je da ste gosta pokušali smjestiti za stol koji je već popunjen ili jednostavno niste popunili neku od traženih informacija."
+                />
+            )}   
+
+            {errorAddModalOpen && (
+                <ErrorModal
+                    onCancel={() => setErrorAddModalOpen(false)}
+                    desc="Došlo je do pogreške prilikom dodavanja gosta. Molimo pokušajte ponovo, moguće je da ste gosta pokušali smjestiti za stol koji je već popunjen ili jednostavno niste popunili neku od traženih informacija."
+                />
+            )}   
+
+            {errorDeleteModalOpen && (
+                <ErrorModal
+                    onCancel={() => setErrorDeleteModalOpen(false)}
+                    desc="Došlo je do pogreške prilikom brisanja gosta. Molimo pokušajte ponovo."
+                />
+            )}
         </div>
     </div>
 );

@@ -117,7 +117,7 @@ export default function Sidebar({ activeTab }) {
     ];
 
     return (
-        <div>
+         <div className="flex flex-col h-full">
             <div onClick={() => navigate("/settings")} className="cursor-pointer mt-3 mx-1 py-3 px-4 bg-gray-50/70 border border-gray-100 rounded-xl flex items-center space-x-3">
                 <div className="w-2 h-2 rounded-full bg-[#B8926A] shrink-0" />
                 <div className="min-w-0 flex-1">
@@ -167,7 +167,13 @@ export default function Sidebar({ activeTab }) {
                         </svg>
                         <span>Odjava</span>
                     </li>
+                    
                 </ul>
+            </div>
+            <div className="pt-4 mt-2 text-center shrink-0">
+                <p className="text-[10px] text-gray-400">
+                    © {new Date().getFullYear()} <a href="https://4solutions.hr">4Solutions</a>. Sva prava pridržana.
+                </p>
             </div>
         </div>
     );
