@@ -2,9 +2,11 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import weddingerLogo from "../assets/logo.png";
-import { HeartIcon, Mail, Lock, Trash, KeyRound, Calendar, Map, Gem} from "lucide-react";
+import { HeartIcon, Mail, Lock, Trash, KeyRound, Calendar, Map, Gem, Trophy, Eye, EyeOff } from "lucide-react";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import ConfirmationModalDelete from "../components/confirmationModalDelete";
+import ErrorModal from "../components/errorModal";
+import LoginModal from "../components/loginModal";
 
 const Settings = () => {
 
@@ -25,6 +27,13 @@ const Settings = () => {
     const [engagementDate, setEngagementDate] = useState({});
     const [date, setDate] = useState({});
     const [location, setLocation] = useState({});
+    const [emailError, setEmailError] = useState(false);
+    const [passwordError, setPasswordError] = useState(false);
+    const [missingFields, setMissingFields] = useState(false);
+    const [changePasswordError, setChangePasswordError] = useState(false);
+    const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const { data: userData } = useQuery({
         queryKey: ['user-profile'],
@@ -140,7 +149,7 @@ const Settings = () => {
         setShowSuccessEmail(false);
 
         if (!emails.partner_one && !emails.partner_two) {
-            alert("Morate unijeti barem jedan email.");
+            setEmailError(true);
             setIsSaving(false);
             return;
         }
@@ -162,7 +171,7 @@ const Settings = () => {
             console.error("Greška prilikom ažuriranja partnera:", error);
             setIsSaving(false);
         }
-    };  
+    };
 
     const deleteAccount = async () => {
         try {
@@ -177,11 +186,11 @@ const Settings = () => {
 
     const updatePassword = async (currentPassword, newPassword, confirmNewPassword) => {
         if (!currentPassword || !newPassword || !confirmNewPassword) {
-            alert("Molim popunite sva polja.");
+            setMissingFields(true)
             return;
         }
         if (newPassword !== confirmNewPassword) {
-            alert("Nova lozinka i potvrda lozinke se ne podudaraju.");
+            setPasswordError(true)
             return;
         }
 
@@ -196,18 +205,16 @@ const Settings = () => {
             });
 
             if (response.ok) {
-                alert("Lozinka je uspješno promijenjena!");
                 setCurrentPassword("");
                 setNewPassword("");
                 setConfirmNewPassword("");
                 setShowSuccessPassword(true);
             } else {
-                const data = await response.json();
-                alert(data.detail || "Promjena lozinke nije uspjela, molim pokušajte ponovo.");
+                setChangePasswordError(true);
             }
         } catch (error) {
             console.error("Greška prilikom promjene lozinke:", error);
-            alert("Došlo je do greške na poslužitelju. Molim pokušajte ponovo.");
+            setChangePasswordError(true);
         }
     };
 
@@ -222,7 +229,7 @@ const Settings = () => {
             setDate({ wedding_date: userData.wedding_date });
         }
     }, [userData]);
-    
+
     useEffect(() => {
         if (userData) {
             setEngagementDate({ engagement_date: userData.engagement_date });
@@ -429,8 +436,8 @@ const Settings = () => {
                                 Želiš li promijeniti svoju registracijsku adresu e-pošte?
                             </label>
 
-                            <div className={`flex flex-col md:flex-row justify-between mt-8 pt-6 border-t border-gray-100 ${showSuccess ? 'gap-2' : ''}`}>
-                                <p className="text-sm text-gray-500 mb-0">
+                            <div className={`flex flex-col md:flex-row justify-between mt-8 pt-6 border-t border-gray-100 ${showSuccessEmail ? 'gap-2' : ''}`}>
+                                <p className="text-sm text-gray-500">
                                     {showSuccessEmail && <span className="text-[#8B6B47] font-semibold">Promjene su uspješno spremljene!</span>}
                                 </p>
                                 <button
@@ -453,37 +460,65 @@ const Settings = () => {
                             </div>
                             <div className="flex flex-col gap-1.5 flex-1 w-full md:w-auto mt-8">
                                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Trenutačna lozinka</p>
-                                <input
-                                    className="border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#B8926A]/25 focus:border-[#B8926A] transition-all"
-                                    type="password"
-                                    value={currentPassword}
-                                    onChange={(e) => setCurrentPassword(e.target.value)}
-                                />
+                                <div className="relative">
+                                    <input
+                                        className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 pr-11 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#B8926A]/25 focus:border-[#B8926A] transition-all"
+                                        type={showCurrentPassword ? "text" : "password"}
+                                        value={currentPassword}
+                                        onChange={(e) => setCurrentPassword(e.target.value)}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                                        tabIndex={-1}
+                                    >
+                                        {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                    </button>
+                                </div>
                             </div>
                             <div className="flex gap-4 flex-col md:flex-row mt-4">
                                 <div className="flex flex-col gap-1.5 flex-1 w-full md:w-auto mt-4">
                                     <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Nova lozinka</p>
-                                    <input
-                                        className="border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#B8926A]/25 focus:border-[#B8926A] transition-all"
-                                        type="password"
-                                        value={newPassword}
-                                        onChange={(e) => setNewPassword(e.target.value)}
-                                    />
+                                    <div className="relative">
+                                        <input
+                                            className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 pr-11 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#B8926A]/25 focus:border-[#B8926A] transition-all"
+                                            type={showNewPassword ? "text" : "password"}
+                                            value={newPassword}
+                                            onChange={(e) => setNewPassword(e.target.value)}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowNewPassword(!showNewPassword)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                                            tabIndex={-1}
+                                        >
+                                            {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                        </button>
+                                    </div>
                                 </div>
                                 <div className="flex flex-col gap-1.5 flex-1 w-full md:w-auto mt-4">
                                     <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Ponovite novu lozinku</p>
-                                    <input
-                                        className="border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#B8926A]/25 focus:border-[#B8926A] transition-all"
-                                        type="password"
-                                        value={confirmNewPassword}
-                                        onChange={(e) => setConfirmNewPassword(e.target.value)}
-                                    />
+                                    <div className="relative">
+                                        <input
+                                            className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 pr-11 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#B8926A]/25 focus:border-[#B8926A] transition-all"
+                                            type={showConfirmPassword ? "text" : "password"}
+                                            value={confirmNewPassword}
+                                            onChange={(e) => setConfirmNewPassword(e.target.value)}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                                            tabIndex={-1}
+                                        >
+                                            {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                            <div className={`flex flex-col md:flex-row justify-between mt-8 pt-6 border-t border-gray-100 ${showSuccessPassword ? 'gap-2' : ''}`}>
-                                <p className="text-sm text-gray-500 mb-0">
-                                    {showSuccessPassword && <span className="text-[#8B6B47] font-semibold">Promjene su uspješno spremljene!</span>}
-                                </p>
+                            <div className="flex flex-col md:flex-row justify-between mt-8 pt-6 border-t border-gray-100">
+                                <p className="text-sm text-gray-500 mb-0"></p>
                                 <button
                                     onClick={() => updatePassword(currentPassword, newPassword, confirmNewPassword)}
                                     className="cursor-pointer bg-linear-to-br from-[#c39d76] to-[#8B6B47] text-white px-6 py-3 rounded-xl text-sm font-semibold shadow-md shadow-[#B8926A]/20 hover:shadow-lg active:scale-97 transition-all duration-200 disabled:opacity-60 w-full md:w-auto"
@@ -523,6 +558,42 @@ const Settings = () => {
                     navigate("/login");
                 }}
             />
+
+            {emailError && (
+                <ErrorModal
+                    onCancel={() => setEmailError(false)}
+                    desc="Potrebno je prije izmjene imati u sustavu barem jednu adresu E-pošte."
+                />
+            )}
+
+            {missingFields && (
+                <ErrorModal
+                    onCancel={() => setMissingFields(false)}
+                    desc="Potrebno je prije izmjene lozinke popuniti polje za trenutačnu lozinku, novu lozinku i potvrdu nove lozinke."
+                />
+            )}
+
+            {passwordError && (
+                <ErrorModal
+                    onCancel={() => setPasswordError(false)}
+                    desc="Nova lozinka i potvrda lozinke se ne podudaraju. Molimo Vas da pokušate ponovo."
+                />
+            )}
+
+            {changePasswordError && (
+                <ErrorModal
+                    onCancel={() => setChangePasswordError(false)}
+                    desc="Trenutačna lozinka koju ste upisali nije ispravna. Molimo Vas da pokušate ponovo ili napravite reset na prozoru za prijavu ako se ne možete sjetiti iste."
+                />
+            )}
+
+            {showSuccessPassword && (
+                <LoginModal
+                    icon={<Trophy className="w-6 h-6 text-green-500" />}
+                    onCancel={() => setShowSuccessPassword(false)}
+                    desc="Nova lozinka je uspješno postavljena. Prilikom sljedeće prijave morat ćete koristiti novu lozinku."
+                />
+            )}
         </div>
     );
 };

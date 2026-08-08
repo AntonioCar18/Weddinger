@@ -30,7 +30,7 @@ const Terms = () => {
                 </div>
 
                 <Section title="1. Opće odredbe">
-                    <p>Ovi Uvjeti korištenja uređuju odnos između obrta 4Solutions (paušalni obrt), OIB: 05055411636, s kontakt adresom info@4solutions.hr (dalje: "Pružatelj usluge"), i korisnika aplikacije Weddinger (dalje: "Korisnik"). Korištenjem aplikacije Korisnik potvrđuje da je pročitao, razumio i prihvatio ove Uvjete.</p>
+                    <p>Ovi Uvjeti korištenja uređuju odnos između obrta 4Solutions (paušalni obrt), OIB: [DOPUNITI], s kontakt adresom info@4solutions.hr (dalje: "Pružatelj usluge"), i korisnika aplikacije Weddinger (dalje: "Korisnik"). Korištenjem aplikacije Korisnik potvrđuje da je pročitao, razumio i prihvatio ove Uvjete.</p>
                 </Section>
 
                 <Section title="2. Opis usluge">
@@ -68,11 +68,12 @@ const Terms = () => {
                 </Section>
 
                 <Section title="9. Cijena usluge i plaćanje">
-                    <p>Osnovne funkcionalnosti aplikacije trenutno su besplatne. Ukoliko Pružatelj usluge u budućnosti uvede plaćene planove ili dodatne funkcionalnosti, cijena i način plaćanja bit će jasno istaknuti prije sklapanja takvog ugovora, a ovi Uvjeti bit će odgovarajuće dopunjeni.</p>
+                    <p>Korištenje aplikacije Weddinger naplaćuje se jednokratno u iznosu od <strong className="text-gray-800">30 EUR</strong>. Pružatelj usluge nije u sustavu PDV-a, stoga navedeni iznos ne sadrži PDV. Nakon registracije korisničkog računa, Korisniku se izdaje ponuda s podacima za plaćanje (transakcijski račun, poziv na broj), s rokom valjanosti od <strong className="text-gray-800">7 dana</strong> od trenutka izdavanja. Pružatelj usluge zadržava pravo izmjene cijene za nove korisnike, uz odgovarajuću izmjenu ovih Uvjeta.</p>
+                    <p>Korisnik ima pravo besplatno koristiti sve funkcionalnosti aplikacije tijekom probnog razdoblja od <strong className="text-gray-800">3 dana</strong> od registracije korisničkog računa. Ukoliko Korisnik ne izvrši uplatu sukladno izdanoj ponudi prije isteka roka njezine valjanosti (7 dana od registracije), korisnički račun se automatski deaktivira te Korisnik gubi pristup svim funkcionalnostima aplikacije. Ponovna aktivacija računa moguća je nakon izvršene uplate, kontaktiranjem Pružatelja usluge na info@4solutions.hr.</p>
                 </Section>
 
                 <Section title="10. Pravo na jednostrani raskid ugovora (povrat novca)">
-                    <p>Ako Weddinger uvede plaćene planove ili funkcionalnosti, Korisnik koji je potrošač (fizička osoba) ima pravo, bez navođenja razloga, jednostrano raskinuti ugovor u roku od <strong className="text-gray-800">14 dana</strong> od dana sklapanja ugovora, sukladno Zakonu o zaštiti potrošača i Direktivi 2011/83/EU o pravima potrošača. Riječ je o zakonskom minimalnom roku za ugovore sklopljene na daljinu unutar Europske unije.</p>
+                    <p>Korisnik koji je potrošač (fizička osoba) ima pravo, bez navođenja razloga, jednostrano raskinuti ugovor u roku od <strong className="text-gray-800">14 dana</strong> od dana sklapanja ugovora (odnosno izvršene uplate), sukladno Zakonu o zaštiti potrošača i Direktivi 2011/83/EU o pravima potrošača. Riječ je o zakonskom minimalnom roku za ugovore sklopljene na daljinu unutar Europske unije.</p>
                     <p>Za ostvarivanje ovog prava, Korisnik nas treba obavijestiti nedvosmislenom izjavom (npr. e-poštom na info@4solutions.hr) o svojoj odluci o raskidu ugovora prije isteka roka od 14 dana. Povrat plaćenog iznosa izvršit ćemo najkasnije u roku od 14 dana od dana primitka obavijesti o raskidu, istim načinom plaćanja koji je Korisnik izvorno koristio.</p>
                     <p className="italic">Napomena: ako Korisnik izričito zatraži i pristane na trenutni početak pružanja usluge prije isteka roka od 14 dana te uslugu u potpunosti iskoristi, može izgubiti pravo na jednostrani raskid sukladno članku 79. Zakona o zaštiti potrošača.</p>
                 </Section>

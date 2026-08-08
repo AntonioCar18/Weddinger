@@ -174,6 +174,11 @@ export default function Sidebar({ activeTab }) {
                 <p className="text-[10px] text-gray-400">
                     © {new Date().getFullYear()} <a href="https://4solutions.hr">4Solutions</a>. Sva prava pridržana.
                 </p>
+                <p className="text-[10px] text-gray-400 mt-1">
+                    <a href="/privacy" target="_blank" rel="noopener noreferrer" className="hover:text-gray-600 hover:underline">Privatnost</a>
+                    {" · "}
+                    <a href="/terms" target="_blank" rel="noopener noreferrer" className="hover:text-gray-600 hover:underline">Uvjeti korištenja</a>
+                </p>
             </div>
         </div>
     );

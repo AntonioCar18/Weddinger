@@ -60,6 +60,7 @@ const Privacy = () => {
 
                 <Section title="5. Pohrana i sigurnost podataka">
                     <p>Podaci se pohranjuju na poslužiteljima tvrtke Hetzner Online GmbH, koja ujedno pruža i uslugu elektroničke pošte koju koristimo za komunikaciju s Vama. Dokumenti koje učitate pohranjuju se putem MinIO sustava za pohranu objekata, koji je samostalno postavljen na istom poslužitelju i nije dostupan trećim stranama. Lozinke se pohranjuju isključivo u kriptiranom (hashiranom) obliku i nikada nisu vidljive u čitljivom obliku, čak ni našem osoblju.</p>
+                    <p>Sva komunikacija između Vašeg uređaja i naših poslužitelja odvija se putem šifrirane HTTPS (TLS/SSL) veze, čime se podaci štite od neovlaštenog pristupa tijekom prijenosa.</p>
                 </Section>
 
                 <Section title="6. Kolačići (cookies)">

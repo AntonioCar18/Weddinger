@@ -146,7 +146,7 @@ const LoginPage = () => {
 
     return (
         <div
-            className={`w-screen bg-cover bg-center bg-no-repeat flex items-center justify-center p-4 ${
+            className={`w-screen bg-cover bg-center bg-no-repeat bg-fixed flex items-center justify-center p-4 ${
                 isLogin
                     ? "fixed left-0 top-0 h-dvh overflow-hidden"
                     : "min-h-dvh overflow-y-auto"
@@ -154,7 +154,7 @@ const LoginPage = () => {
             style={{ backgroundImage: "url('https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1920')" }}
         >
             <div className={`bg-white rounded-2xl p-8 flex flex-col shadow-xl max-w-md w-full ${
-                isLogin ? "h-auto max-h-full overflow-hidden" : "my-8"
+                isLogin ? "h-auto max-h-full overflow-hidden" : "my-4"
             }`}>
                 {(isLogin || registerStep === 1) && (
                     <div className="flex w-full border-b border-gray-200 mb-6">
@@ -241,7 +241,7 @@ const LoginPage = () => {
                     <>
                         <div className="text-center mb-8">
                             <h1 className="text-2xl font-bold text-gray-800">Dobrodošli u Weddinger!</h1>
-                            <p className="text-gray-500 mt-1">Registrirajte se kako biste koristili naše usluge</p>
+                            <p className="text-gray-500 mt-1">Registrirajte se za korištenje usluga</p>
                         </div>
 
                         <div className="space-y-4">
@@ -276,7 +276,7 @@ const LoginPage = () => {
                         </div>
 
                         <div className="text-sm text-gray-500 mt-6">
-                            <p>Registracijom prihvaćate naše <a href="/terms" target="_blank" className="font-bold">uvjete korištenja</a> i <a href="/privacy" target="_blank" className="font-bold">politiku privatnosti</a>. Ako ste se već registrirali, možete se <a href="#" className="font-bold" onClick={() => setIsLogin(true)}>prijaviti</a>.</p>
+                            <p>Registracijom prihvaćate naše <a href="/terms" target="_blank" rel="noopener noreferrer" className="font-bold">uvjete korištenja</a> i <a href="/privacy" target="_blank" rel="noopener noreferrer" className="font-bold">politiku privatnosti</a>. Ako ste se već registrirali, možete se <a href="#" className="font-bold" onClick={() => setIsLogin(true)}>prijaviti</a>.</p>
                         </div>
 
                         <button

@@ -50,12 +50,15 @@ const Partners = () => {
         selectedCategory === "Sve" || partner.partner_category === selectedCategory
     ) ?? [];
 
-    const availableLocations = [...new Set(partnersInCategory.map((p) => p.partner_location))];
+    const availableLocations = [...new Set(
+        partnersInCategory.flatMap((p) => p.partner_location?.split(",").map((loc) => loc.trim()) ?? [])
+    )];
 
     const filteredPartners = partners.data?.filter((partner) => {
         const searchTerm = searchPartner.toLowerCase();
         const matchesCategory = selectedCategory === "Sve" || partner.partner_category === selectedCategory;
-        const matchesArea = selectedArea === "Svi" || partner.partner_location === selectedArea;
+        const partnerLocations = partner.partner_location?.split(",").map((loc) => loc.trim()) ?? [];
+        const matchesArea = selectedArea === "Svi" || partnerLocations.includes(selectedArea);
         return partner.partner_name?.toLowerCase().includes(searchTerm) && matchesCategory && matchesArea;
     }) || [];
 

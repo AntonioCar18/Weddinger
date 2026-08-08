@@ -330,7 +330,7 @@ const Budget = () => {
             </div>
             <button
                 onClick={() => setAddItem(true)}
-                className="lg:hidden fixed bottom-8 right-6 bg-[#B8926A] text-white p-4 rounded-full shadow-lg shadow-[#B8926A]/40 active:scale-95 transition-all duration-200 z-40 flex items-center justify-center cursor-pointer"
+                className="lg:hidden fixed bottom-8 right-6 bg-linear-to-r from-[#c39d76] to-[#8B6B47] text-white p-4 rounded-full shadow-lg shadow-[#B8926A]/40 active:scale-95 transition-all duration-200 z-40 flex items-center justify-center cursor-pointer"
             >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />

@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /guests
+Disallow: /sitting-schedule
+Disallow: /budget
+Disallow: /tasks
+Disallow: /partners
+Disallow: /documents
+Disallow: /settings
+Disallow: /onboarding
+
+Sitemap: https://weddinger.com.hr/sitemap.xml

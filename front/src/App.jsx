@@ -46,6 +46,8 @@ function App() {
         <Routes>
           <Route path="/" element={<HomeRedirect />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
 
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<Dashboard />} />
@@ -57,8 +59,7 @@ function App() {
             <Route path="/documents" element={<Documents />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/onboarding" element={<Onboarding />} />
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="/terms" element={<Terms />} />
+
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

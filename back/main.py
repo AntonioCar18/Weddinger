@@ -19,6 +19,12 @@ import random
 import smtplib
 from email.mime.text import MIMEText
 from typing import Optional, List
+import requests
+from email.mime.multipart import MIMEMultipart
+from email.mime.application import MIMEApplication
+from pydantic import BaseModel, EmailStr
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import StreamingResponse, JSONResponse
 
 from database import takeFromBase, executeQuery
 
@@ -37,6 +43,9 @@ SMTP_USER = os.getenv("SMTP_USER")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
 SMTP_FROM = os.getenv("SMTP_FROM", SMTP_USER)
 
+SOLO_API_TOKEN = os.getenv("SOLO_API_TOKEN")
+SOLO_SERVICE_TYPE_ID = os.getenv("SOLO_SERVICE_TYPE_ID")
+
 BASELINE_TASKS = [
     {"task_name": "Rezervacija lokacije", "category": "Prostor", "days_before": 300},
     {"task_name": "Odabir fotografa", "category": "Ostalo", "days_before": 240},
@@ -51,8 +60,27 @@ TAG_TASKS = {
     "gosti_izvan": [{"task_name": "Pripremiti prijedloge smještaja za goste izvan grada", "category": "Ostalo", "days_before": 90}],
 }
 
-def send_email(to: str, subject: str, body: str):
-    msg = MIMEText(body)
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc):
+    first_error = exc.errors()[0] if exc.errors() else None
+    if first_error and "email" in str(first_error.get("loc", [])):
+        message = "Adresa e-pošte nije u ispravnom formatu."
+    else:
+        message = "Neispravno popunjen obrazac. Provjerite unesene podatke."
+    return JSONResponse(status_code=422, content={"detail": message})
+
+def send_email(to: str, subject: str, body: str, is_html: bool = False, attachment_bytes: bytes = None, attachment_filename: str = None):
+    body_part = MIMEText(body, 'html' if is_html else 'plain', 'utf-8')
+
+    if attachment_bytes and attachment_filename:
+        msg = MIMEMultipart()
+        msg.attach(body_part)
+        part = MIMEApplication(attachment_bytes, Name=attachment_filename)
+        part['Content-Disposition'] = f'attachment; filename="{attachment_filename}"'
+        msg.attach(part)
+    else:
+        msg = body_part
+
     msg["Subject"] = subject
     msg["From"] = SMTP_FROM
     msg["To"] = to
@@ -61,6 +89,26 @@ def send_email(to: str, subject: str, body: str):
         server.starttls()
         server.login(SMTP_USER, SMTP_PASSWORD)
         server.sendmail(SMTP_FROM, [to], msg.as_string())
+
+def create_solo_offer(email: str):
+    data = {
+        "token": SOLO_API_TOKEN,
+        "tip_usluge": SOLO_SERVICE_TYPE_ID,
+        "tip_kupca": 1,  # B2C - fizička osoba
+        "usluga": 1,
+        "opis_usluge_1": "Weddinger - jednokratni pristup aplikaciji",
+        "cijena_1": "30,00",
+        "kolicina_1": 1,
+        "popust_1": 0,
+        "porez_stopa_1": 0,
+        "nacin_placanja": 1,  # Transakcijski račun
+        "napomene": f"Korisnički račun: {email}",
+    }
+    response = requests.post("https://api.solo.com.hr/ponuda", data=data, timeout=10)
+    result = response.json()
+    if result.get("status") != 0:
+        raise Exception(f"Solo API greška: {result.get('message')}")
+    return result["ponuda"]
 
 def build_starter_tasks(user_id: int, wedding_date_str: str, tags: list):
     try:
@@ -136,11 +184,11 @@ def create_access_token(user_id: int, email: str):
 
 # --- Modeli ---
 class LoginModel(BaseModel):
-    email: str
+    email: EmailStr
     password: str
 
 class RegisterModel(BaseModel):
-    email: str
+    email: EmailStr
     password: str
 
 class GuestModel(BaseModel):
@@ -232,7 +280,10 @@ def login(login_data: LoginModel, response: Response):
     user = takeFromBase("SELECT * FROM users WHERE email = %s OR partner_email = %s;", (login_data.email, login_data.email))
     if not user or not pwd_context.verify(login_data.password, user[0]["password"]):
         raise HTTPException(status_code=401, detail="Neispravan email ili lozinka")
-    
+
+    if user[0]["is_active"] is False:
+        raise HTTPException(status_code=403, detail="Vaš račun je privremeno deaktiviran zbog neizvršene uplate. Kontaktirajte nas na info@4solutions.hr.")
+
     token = create_access_token(user_id=user[0]["id"], email=user[0]["email"])
     response.set_cookie(key="access_token", value=token, httponly=True, samesite="lax", max_age=3600)
     return {"message": "Uspješna prijava"}
@@ -319,8 +370,55 @@ def update_password(update_data: UpdatePasswordModel, current_user: dict = Depen
 
 @app.post("/api/register")
 def register(register_data: RegisterModel):
-    if takeFromBase("SELECT * FROM users WHERE email = %s OR partner_email = %s;", (register_data.email, register_data.email)):
+    existing_as_partner = takeFromBase("SELECT id FROM users WHERE partner_email = %s;", (register_data.email,))
+    if existing_as_partner:
         raise HTTPException(status_code=400, detail="Ovaj email je već povezan s postojećim računom. Pokušajte se prijaviti.")
+
+    existing = takeFromBase("SELECT * FROM users WHERE email = %s;", (register_data.email,))
+
+    if existing:
+        if existing[0]["email_verified"]:
+            raise HTTPException(status_code=400, detail="Ovaj email je već povezan s postojećim računom. Pokušajte se prijaviti.")
+
+        # Račun postoji, ali nikad nije verificiran - pošalji novi kod umjesto blokiranja
+        code = f"{random.randint(0, 999999):06d}"
+        expires = datetime.datetime.utcnow() + timedelta(minutes=15)
+        executeQuery(
+            "UPDATE users SET verify_code = %s, verify_code_expires = %s WHERE email = %s;",
+            (code, expires, register_data.email)
+        )
+
+        offer_number = existing[0].get("solo_offer_number")
+        offer_pdf_url = existing[0].get("solo_offer_pdf_url")
+        offer_section = ""
+        if offer_pdf_url:
+            offer_section = f"""
+                <hr style="border: none; border-top: 1px solid #efe9e0; margin: 24px 0;">
+                <p>Podsjetnik: ponuda za korištenje aplikacije Weddinger (broj ponude: <strong>{offer_number}</strong>) i dalje čeka na uplatu. Preuzmite je <a href="{offer_pdf_url}">ovdje</a>.</p>
+            """
+
+        resend_html = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; color: #2D2A26; line-height: 1.6;">
+            <p>Poštovani,</p>
+            <p>Dobrodošli natrag u Weddinger! Vaš novi kod za potvrdu emaila je: <strong style="font-size: 20px;">{code}</strong> (vrijedi 15 minuta).</p>
+            {offer_section}
+            <p>Molimo Vas da na ovaj mail ne odgovarate, a ukoliko imate pitanja ili nejasnoća, javite nam se na <a href="mailto:helpdesk@weddinger.com.hr">helpdesk@weddinger.com.hr</a>.</p>
+            <p>Srdačan pozdrav,<br>Weddinger tim</p>
+        </body>
+        </html>
+        """
+
+        try:
+            send_email(
+                to=register_data.email,
+                subject="Vaš novi kod za potvrdu - Weddinger",
+                body=resend_html,
+                is_html=True
+            )
+        except Exception as e:
+            print(f"Greška pri slanju maila: {e}")
+        return {"message": "Poslali smo novi kod za potvrdu na vaš email."}
 
     hashed = pwd_context.hash(register_data.password)
     code = f"{random.randint(0, 999999):06d}"
@@ -330,11 +428,53 @@ def register(register_data: RegisterModel):
     if not executeQuery(query, (register_data.email, hashed, code, expires)):
         raise HTTPException(status_code=500, detail="Greška pri registraciji")
 
+    # Pokušaj kreirati Solo ponudu - ako ne uspije, kod za potvrdu i dalje ide dalje
+    pdf_bytes = None
+    offer = None
+    try:
+        offer = create_solo_offer(register_data.email)
+        executeQuery(
+            "UPDATE users SET solo_offer_id = %s, solo_offer_number = %s, solo_offer_pdf_url = %s WHERE email = %s;",
+            (offer["id"], offer["broj_ponude"], offer["pdf"], register_data.email)
+        )
+        try:
+            pdf_response = requests.get(offer["pdf"], timeout=10)
+            if pdf_response.status_code == 200:
+                pdf_bytes = pdf_response.content
+        except Exception as e:
+            print(f"Greška pri preuzimanju PDF ponude: {e}")
+    except Exception as e:
+        print(f"Greška pri kreiranju Solo ponude: {e}")
+
+    offer_section = ""
+    if offer:
+        offer_section = f"""
+            <hr style="border: none; border-top: 1px solid #efe9e0; margin: 24px 0;">
+            <p>U prilogu je i ponuda za korištenje aplikacije Weddinger (broj ponude: <strong>{offer['broj_ponude']}</strong>). Ponuda vrijedi 7 dana, a potvrdu o uplati nije potrebno slati. Ukoliko naiđete na poteškoće s plaćanjem, slobodno nas kontaktirajte.</p>
+            <p>Ako privitak ne stigne, ponudu možete preuzeti i <a href="{offer['pdf']}">ovdje</a>.</p>
+        """
+
+    welcome_html = f"""
+    <html>
+    <body style="font-family: Arial, sans-serif; color: #2D2A26; line-height: 1.6;">
+        <p>Poštovani,</p>
+        <p>Dobrodošli u Weddinger! Presretni smo što ste se odlučili pridružiti našoj Weddinger obitelji i nadamo se da će Vam korištenje aplikacije biti ugodno i korisno.</p>
+        <p>Vaš kod za potvrdu emaila je: <strong style="font-size: 20px;">{code}</strong> (vrijedi 15 minuta).</p>
+        {offer_section}
+        <p>Molimo Vas da na ovaj mail ne odgovarate, a ukoliko imate pitanja ili nejasnoća, javite nam se na <a href="mailto:helpdesk@weddinger.com.hr">helpdesk@weddinger.com.hr</a>.</p>
+        <p>Srdačan pozdrav,<br>Weddinger tim</p>
+    </body>
+    </html>
+    """
+
     try:
         send_email(
             to=register_data.email,
-            subject="Potvrdite svoj email - Weddinger",
-            body=f"Dobrodošli u Weddinger! Vaš kod za potvrdu emaila je: {code}\n\nVrijedi 15 minuta."
+            subject="Dobrodošli u Weddinger - kod za potvrdu i ponuda",
+            body=welcome_html,
+            is_html=True,
+            attachment_bytes=pdf_bytes,
+            attachment_filename=f"ponuda-{offer['broj_ponude']}.pdf" if (pdf_bytes and offer) else None
         )
     except Exception as e:
         print(f"Greška pri slanju maila: {e}")
