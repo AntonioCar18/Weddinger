@@ -274,6 +274,9 @@ class VerifyEmailModel(BaseModel):
     email: str
     code: str
 
+class SeenAnnouncementModel(BaseModel):
+    page: str
+
 # --- Rute ---
 @app.post("/api/login")
 def login(login_data: LoginModel, response: Response):
@@ -296,7 +299,7 @@ def logout(response: Response):
 @app.get("/api/me")
 def get_me(current_user: dict = Depends(get_current_user)):
     user_id = current_user.get("sub")
-    user = takeFromBase("SELECT partner_one, partner_two, wedding_date, wedding_location, email, partner_email, engagement_date, onboarding_completed FROM users WHERE id = %s;", (user_id,))
+    user = takeFromBase("SELECT partner_one, partner_two, wedding_date, wedding_location, email, partner_email, engagement_date, onboarding_completed, created_at, seen_announcements, pricing_onboarding, solo_offer_pdf_url FROM users WHERE id = %s;", (user_id,))
     if not user:
         raise HTTPException(status_code=404, detail="Korisnik nije nađen")
     return {"user": user[0]}
@@ -557,6 +560,27 @@ def reset_password(data: ResetPasswordModel):
         (hashed, user[0]['id'])
     )
     return {"message": "Lozinka je uspješno promijenjena."}
+
+@app.put("/api/me/announcement")
+def date_seen_announcement(data: SeenAnnouncementModel, current_user: dict = Depends(get_current_user)):
+    user_id = current_user.get("sub")
+    query = """ UPDATE users SET seen_announcements = COALESCE (seen_announcements, '{}'::jsonb) || jsonb_build_object(%s, %s::text) WHERE id = %s """
+    success = executeQuery(query, (data.page, datetime.datetime.utcnow().isoformat(), user_id))
+    if success:
+        return {"message": "Uspješno ažurirano."}
+    else:
+        raise HTTPException(status_code=500, detail="Pogreška prilikom ažuriranja stanja.")
+
+@app.put("/api/me/pricing-onboarding")
+def pricing_onboarding_seen(current_user: dict = Depends(get_current_user)):
+    user_id = current_user.get("sub")
+    query = "UPDATE users SET pricing_onboarding = true WHERE id = %s;"
+    success = executeQuery(query, (user_id,))
+    if (success):
+        return {"message": "Uspješno ažurirano."}
+    else:
+        raise HTTPException(status_code=500, detail="Pogreška prilikom ažuriranja.")
+
     
 # Gosti
 

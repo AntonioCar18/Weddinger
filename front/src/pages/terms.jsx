@@ -30,7 +30,7 @@ const Terms = () => {
                 </div>
 
                 <Section title="1. Opće odredbe">
-                    <p>Ovi Uvjeti korištenja uređuju odnos između obrta 4Solutions (paušalni obrt), OIB: [DOPUNITI], s kontakt adresom info@4solutions.hr (dalje: "Pružatelj usluge"), i korisnika aplikacije Weddinger (dalje: "Korisnik"). Korištenjem aplikacije Korisnik potvrđuje da je pročitao, razumio i prihvatio ove Uvjete.</p>
+                    <p>Ovi Uvjeti korištenja uređuju odnos između obrta 4Solutions (paušalni obrt), OIB: 05055411636, s kontakt adresom info@4solutions.hr (dalje: "Pružatelj usluge"), i korisnika aplikacije Weddinger (dalje: "Korisnik"). Korištenjem aplikacije Korisnik potvrđuje da je pročitao, razumio i prihvatio ove Uvjete.</p>
                 </Section>
 
                 <Section title="2. Opis usluge">
@@ -69,7 +69,8 @@ const Terms = () => {
 
                 <Section title="9. Cijena usluge i plaćanje">
                     <p>Korištenje aplikacije Weddinger naplaćuje se jednokratno u iznosu od <strong className="text-gray-800">30 EUR</strong>. Pružatelj usluge nije u sustavu PDV-a, stoga navedeni iznos ne sadrži PDV. Nakon registracije korisničkog računa, Korisniku se izdaje ponuda s podacima za plaćanje (transakcijski račun, poziv na broj), s rokom valjanosti od <strong className="text-gray-800">7 dana</strong> od trenutka izdavanja. Pružatelj usluge zadržava pravo izmjene cijene za nove korisnike, uz odgovarajuću izmjenu ovih Uvjeta.</p>
-                    <p>Korisnik ima pravo besplatno koristiti sve funkcionalnosti aplikacije tijekom probnog razdoblja od <strong className="text-gray-800">3 dana</strong> od registracije korisničkog računa. Ukoliko Korisnik ne izvrši uplatu sukladno izdanoj ponudi prije isteka roka njezine valjanosti (7 dana od registracije), korisnički račun se automatski deaktivira te Korisnik gubi pristup svim funkcionalnostima aplikacije. Ponovna aktivacija računa moguća je nakon izvršene uplate, kontaktiranjem Pružatelja usluge na info@4solutions.hr.</p>
+                    <p>Korisnik ima pravo besplatno koristiti sve funkcionalnosti aplikacije tijekom probnog razdoblja od <strong className="text-gray-800">3 dana</strong> od registracije korisničkog računa. Ukoliko Korisnik ne izvrši uplatu unutar tog roka, pristup aplikaciji se privremeno onemogućava. Ponovna aktivacija pristupa moguća je u bilo kojem trenutku nakon izvršene uplate, sve dok ponuda vrijedi.</p>
+                    <p>Ukoliko Korisnik ne izvrši uplatu ni do isteka roka valjanosti ponude (<strong className="text-gray-800">7 dana</strong> od registracije), korisnički račun i svi povezani podaci trajno se brišu iz sustava. Nakon brisanja računa, korištenje usluge moguće je isključivo putem nove registracije.</p>
                 </Section>
 
                 <Section title="10. Pravo na jednostrani raskid ugovora (povrat novca)">
@@ -80,6 +81,7 @@ const Terms = () => {
 
                 <Section title="11. Prekid usluge i brisanje računa">
                     <p>Korisnik može u svakom trenutku samostalno obrisati svoj korisnički račun putem postavki aplikacije, čime se trajno brišu svi povezani podaci. Pružatelj usluge zadržava pravo ukinuti pristup Korisniku koji krši ove Uvjete.</p>
+                    <p>S obzirom na to da je usluga namijenjena isključivo planiranju vjenčanja, korisnički račun i svi povezani podaci automatski se trajno brišu iz sustava <strong className="text-gray-800">7 dana</strong> nakon datuma vjenčanja koji je Korisnik unio u aplikaciju. Korisniku se preporučuje da prije tog roka preuzme i pohrani sve podatke koje želi zadržati (npr. popis gostiju, proračun, dokumente).</p>
                 </Section>
 
                 <Section title="12. Izmjene Uvjeta">

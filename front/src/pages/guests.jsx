@@ -11,6 +11,7 @@ import { UsersRound } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import DeleteModal from "../components/deleteModal";
 import ErrorModal from "../components/errorModal";
+import Announcements from "../components/Announcements";
 
 const Guests = () => {
     const navigate = useNavigate();
@@ -31,19 +32,19 @@ const Guests = () => {
     const [selectGuestForEdit, setSelectGuestForEdit] = useState(null);
 
     const { data: guestsData = [], isLoading, refetch } = useQuery({
-        queryKey: ['guests'], 
+        queryKey: ['guests'],
         queryFn: async () => {
-            const response = await fetch("/api/guests", { 
-                method: "GET", 
-                credentials: 'include' 
+            const response = await fetch("/api/guests", {
+                method: "GET",
+                credentials: 'include'
             });
             if (!response.ok) throw new Error("Greška");
             return response.json();
         },
-        staleTime: 5000, 
+        staleTime: 5000,
         refetchInterval: 10000,
     });
-    
+
 
     useEffect(() => {
         setCurrentPage(1);
@@ -51,17 +52,18 @@ const Guests = () => {
 
     const totalNumber = (guestsData?.length || 0) + (guestsData?.filter(guest => guest.plus_one === true).length || 0);
     const confirmedNumber = (guestsData?.filter(guest => guest.status === "Potvrđeno").length || 0) + (guestsData?.filter(guest => guest.plus_one === true && guest.status === "Potvrđeno").length || 0);
-    const pendingNumber = (guestsData?.filter(guest => guest.status === "Na čekanju").length || 0) + (guestsData?.filter(guest => guest.plus_one === true && guest.status === "Na čekanju").length || 0); 
+    const pendingNumber = (guestsData?.filter(guest => guest.status === "Na čekanju").length || 0) + (guestsData?.filter(guest => guest.plus_one === true && guest.status === "Na čekanju").length || 0);
+    const invitedNumber = (guestsData?.filter(guest => guest.status === "Pozvan").length || 0) + (guestsData?.filter(guest => guest.plus_one === true && guest.status === "Pozvan").length || 0);
     const rejectedNumber = (guestsData?.filter(guest => guest.status === "Odbijeno").length || 0) + (guestsData?.filter(guest => guest.plus_one === true && guest.status === "Odbijeno").length || 0);
 
     const handleSaveGuest = async (guestData) => {
-        try {  
-            const response = await fetch("/api/guests", { 
+        try {
+            const response = await fetch("/api/guests", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify(guestData), 
+                body: JSON.stringify(guestData),
                 credentials: 'include'
             });
             if (response.ok) {
@@ -83,14 +85,14 @@ const Guests = () => {
         const matchesPlusOne = plusOneFilter === "Svi" || guest.plus_one === (plusOneFilter === "Da");
         const matchesMenu = menuFilter === "Svi" || guest.menu_type === menuFilter || (guest.plus_one && guest.menu_type_plus_one === menuFilter);
         return (
-            guest.name?.toLowerCase().includes(searchTerm) || 
+            guest.name?.toLowerCase().includes(searchTerm) ||
             (guest.plus_one_name && guest.plus_one_name.toLowerCase().includes(searchTerm))
         ) && matchesStatus && matchesPlusOne && matchesMenu;
     }) || [];
 
     const indexOfLastGuest = currentPage * itemsPerPage;
     const indexOfFirstGuest = indexOfLastGuest - itemsPerPage;
-    
+
     const currentGuests = filteredGuests.slice(indexOfFirstGuest, indexOfLastGuest);
     const totalPages = Math.ceil(filteredGuests.length / itemsPerPage);
 
@@ -121,7 +123,8 @@ const Guests = () => {
 
     const guestStatus = async (guestId, currentStatus) => {
         const statusOrder = {
-            "Na čekanju": "Potvrđeno",
+            "Na čekanju": "Pozvan",
+            "Pozvan": "Potvrđeno",
             "Potvrđeno": "Odbijeno",
             "Odbijeno": "Na čekanju"
         };
@@ -188,7 +191,7 @@ const Guests = () => {
     return (
     <div className="h-screen flex overflow-hidden bg-[#fcfbfa] relative">
         {isSidebarOpen && (
-            <div 
+            <div
                 className="fixed inset-0 bg-black/40 backdrop-blur-xs z-30 lg:hidden"
                 onClick={() => setIsSidebarOpen(false)}
             />
@@ -197,7 +200,7 @@ const Guests = () => {
         <div className={`fixed inset-y-0 left-0 w-64 bg-white flex flex-col p-6 shadow-xl h-full border-r border-gray-100 z-40 lg:z-10 lg:static transform ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0 transition-transform duration-300 ease-in-out`}>
             <div onClick={() => navigate("/dashboard")} className="cursor-pointer flex items-center justify-between lg:justify-center">
                 <img src={weddingerLogo} alt="Weddinger Logo" className="h-auto w-36 lg:w-44" />
-                <button 
+                <button
                     onClick={() => setIsSidebarOpen(false)}
                     className="lg:hidden p-2 text-gray-500 hover:text-gray-800"
                 >
@@ -218,7 +221,7 @@ const Guests = () => {
             </button>
         <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
             <div className="flex px-4 md:px-10 lg:px-16 pt-6 lg:pt-12 pb-4 items-center justify-between w-full border-b lg:border-none border-gray-100 bg-white lg:bg-transparent">
-                <button 
+                <button
                     onClick={() => setIsSidebarOpen(true)}
                     className="lg:hidden p-2 text-gray-600 hover:bg-gray-50 rounded-lg mr-2"
                 >
@@ -226,20 +229,19 @@ const Guests = () => {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
                     </svg>
                 </button>
-
                 <div className="flex flex-col text-gray-800 flex-1 min-w-0 lg:mr-4">
                     <h1 className="text-xl md:text-2xl lg:text-3xl font-extrabold tracking-tight truncate">Popis gostiju</h1>
                     <p className="hidden md:block text-sm lg:text-base text-gray-500 truncate mt-0.5">Upravljajte svojim gostima, dodajte ih i uređujte informacije.</p>
                 </div>
 
                 <div className="flex items-center space-x-3">
-                    <button 
+                    <button
                         className="cursor-pointer bg-linear-to-r from-[#c39d76] to-[#8B6B47]  text-white shadow-md shadow-[#B8926A]/20 px-4 lg:px-8 py-2.5 lg:py-3.5 rounded-xl text-sm lg:text-base font-semibold hover:bg-[#a07b5c] active:scale-98 transition-all duration-200 whitespace-nowrap"
                         onClick={() => ExportGuestsToPDF(filteredGuests)}
                     >
                         Izvezi u PDF
                     </button>
-                    <button 
+                    <button
                         className="hidden lg:block cursor-pointer bg-linear-to-r from-[#c39d76] to-[#8B6B47]  text-white shadow-md shadow-[#B8926A]/20 px-4 lg:px-8 py-2.5 lg:py-3.5 rounded-xl text-sm lg:text-base font-semibold hover:bg-[#a07b5c] active:scale-98 transition-all duration-200 whitespace-nowrap"
                         onClick={() => setShowAddPage(true)}
                     >
@@ -249,10 +251,14 @@ const Guests = () => {
             </div>
 
             <div className="flex-1 px-4 md:px-10 lg:px-16 py-4 space-y-6">
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6 w-full">
-                    <GuestBlock title="Ukupno gostiju" count={totalNumber} />
-                    <GuestBlock title="Potvrđeni" count={confirmedNumber} />
+                <Announcements page="guests"/>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 lg:gap-6 w-full">
+                    <div className="col-span-2 sm:col-span-1">
+                        <GuestBlock title="Ukupno gostiju" count={totalNumber} />
+                    </div>
                     <GuestBlock title="Upitni" count={pendingNumber} />
+                    <GuestBlock title="Pozvano" count={invitedNumber} />
+                    <GuestBlock title="Potvrđeni" count={confirmedNumber} />
                     <GuestBlock title="Odbijeni" count={rejectedNumber} />
                 </div>
 
@@ -285,8 +291,9 @@ const Guests = () => {
                                 className="w-full h-12 lg:h-14 bg-white border border-gray-200 rounded-xl pl-11 pr-10 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#B8926A]/20 focus:border-[#B8926A] transition-all duration-200 text-sm lg:text-base text-gray-700 cursor-pointer appearance-none"
                             >
                                 <option value="Svi">Svi statusi</option>
-                                <option value="Potvrđeno">Potvrđeno</option>
                                 <option value="Na čekanju">Na čekanju</option>
+                                <option value="Pozvan">Pozvan</option>
+                                <option value="Potvrđeno">Potvrđeno</option>
                                 <option value="Odbijeno">Odbijeno</option>
                             </select>
                         </div>
@@ -350,8 +357,8 @@ const Guests = () => {
                                         <td colSpan="7" className="p-12 text-center">
                                             <div className="flex flex-col items-center justify-center">
                                             <p className="text-gray-500 font-medium">Trenutačno nemate dodanih gostiju.</p>
-                                            <button 
-                                                onClick={() => setShowAddPage(true)} 
+                                            <button
+                                                onClick={() => setShowAddPage(true)}
                                                 className="mt-4 text-[#B8926A] font-semibold hover:underline cursor-pointer"
                                             >
                                                 Dodaj prvog gosta
@@ -367,8 +374,8 @@ const Guests = () => {
                                     </tr>
                                 ): (
                                     currentGuests.map((guest) => (
-                                        <tr 
-                                        key={guest.id} 
+                                        <tr
+                                        key={guest.id}
                                         className="hover:bg-gray-50/50 transition-colors cursor-pointer"
                                         onClick={() => setSelectGuestForEdit(guest)}
                                         >
@@ -382,10 +389,11 @@ const Guests = () => {
                                                 <button
                                                     type="button"
                                                     onClick={(e) => {
-                                                        e.stopPropagation();        
+                                                        e.stopPropagation();
                                                         guestStatus(guest.id, guest.status);}}
                                                     className={`cursor-pointer inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold tracking-wide shrink-0 transition-colors
                                                         ${guest.status === "Potvrđeno" ? "bg-emerald-50 text-emerald-700 border border-emerald-100" : ""}
+                                                        ${guest.status === "Pozvan" ? "bg-blue-50 text-blue-700 border border-blue-100" : ""}
                                                         ${guest.status === "Na čekanju" ? "bg-amber-50 text-amber-700 border border-amber-100" : ""}
                                                         ${guest.status === "Odbijeno" ? "bg-rose-50 text-rose-700 border border-rose-100" : ""}
                                                         hover:bg-opacity-80
@@ -395,8 +403,8 @@ const Guests = () => {
                                                 </button>
                                             </td>
                                             <td className="py-4 px-5 text-center align-middle">
-                                                <button 
-                                                    className="text-red-300 hover:text-red-200 cursor-pointer font-medium transition-colors" 
+                                                <button
+                                                    className="text-red-300 hover:text-red-200 cursor-pointer font-medium transition-colors"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         setDeleteModalOpen(guest.id);
@@ -418,8 +426,8 @@ const Guests = () => {
                     {guestsData.length === 0 ? (
                         <div className="bg-white p-6 shadow-sm rounded-2xl flex flex-col items-center justify-center">
                             <p className="text-gray-500 font-medium">Trenutačno nemate dodanih gostiju.</p>
-                            <button 
-                                onClick={() => setShowAddPage(true)} 
+                            <button
+                                onClick={() => setShowAddPage(true)}
                                 className="mt-4 text-[#B8926A] font-semibold hover:underline cursor-pointer"
                             >
                             Dodaj prvog gosta
@@ -431,8 +439,8 @@ const Guests = () => {
                         </div>
                     ) : (
                         currentGuests.map((guest) => (
-                            <div 
-                            key={guest.id} 
+                            <div
+                            key={guest.id}
                             className="bg-white p-4 border border-gray-100 rounded-2xl shadow-xs flex flex-col space-y-3"
                             onClick={() => setSelectGuestForEdit(guest)}
                             >
@@ -453,6 +461,7 @@ const Guests = () => {
                                         }}
                                         className={`cursor-pointer inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold tracking-wide shrink-0 transition-colors
                                             ${guest.status === "Potvrđeno" ? "bg-emerald-50 text-emerald-700 border border-emerald-100" : ""}
+                                            ${guest.status === "Pozvan" ? "bg-blue-50 text-blue-700 border border-blue-100" : ""}
                                             ${guest.status === "Na čekanju" ? "bg-amber-50 text-amber-700 border border-amber-100" : ""}
                                             ${guest.status === "Odbijeno" ? "bg-rose-50 text-rose-700 border border-rose-100" : ""}
                                             hover:bg-opacity-80
@@ -467,8 +476,8 @@ const Guests = () => {
                                     <span className={`px-2 py-0.5 rounded-md font-semibold ${guest.plus_one ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-50 text-gray-500'}`}>
                                         {guest.plus_one ? 'Da' : 'Ne'}
                                     </span>
-                                    <button 
-                                        className="text-red-500 cursor-pointer hover:text-red-700 font-medium transition-colors" 
+                                    <button
+                                        className="text-red-500 cursor-pointer hover:text-red-700 font-medium transition-colors"
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             setDeleteModalOpen(guest.id);
@@ -510,21 +519,21 @@ const Guests = () => {
             </div>
 
             {showAddPage && (
-                <AddGuest 
-                    onClose={() => setShowAddPage(false)} 
-                    onSave={handleSaveGuest} 
+                <AddGuest
+                    onClose={() => setShowAddPage(false)}
+                    onSave={handleSaveGuest}
                 />
             )}
 
             {selectGuestForEdit && (
                 <EditGuest
                     guest={selectGuestForEdit}
-                    onClose={() => setSelectGuestForEdit(null)} 
+                    onClose={() => setSelectGuestForEdit(null)}
                     onSave={(data) => {
                         updateGuest(selectGuestForEdit.id, data);
                         setSelectGuestForEdit(null);
                         refetch();
-                    }} 
+                    }}
                 />
             )}
 
@@ -538,21 +547,21 @@ const Guests = () => {
                     desc="Jeste li sigurni da želite izbrisati ovog gosta? Ova akcija se ne može poništiti."
                     deleteText="Obriši gosta"
                 />
-            )}     
+            )}
 
             {errorModalOpen && (
                 <ErrorModal
                     onCancel={() => setErrorModalOpen(false)}
                     desc="Došlo je do pogreške prilikom ažuriranja gosta. Molimo pokušajte ponovo, moguće je da ste gosta pokušali smjestiti za stol koji je već popunjen ili jednostavno niste popunili neku od traženih informacija."
                 />
-            )}   
+            )}
 
             {errorAddModalOpen && (
                 <ErrorModal
                     onCancel={() => setErrorAddModalOpen(false)}
                     desc="Došlo je do pogreške prilikom dodavanja gosta. Molimo pokušajte ponovo, moguće je da ste gosta pokušali smjestiti za stol koji je već popunjen ili jednostavno niste popunili neku od traženih informacija."
                 />
-            )}   
+            )}
 
             {errorDeleteModalOpen && (
                 <ErrorModal

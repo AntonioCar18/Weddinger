@@ -31,6 +31,24 @@ const ExportTablesToPDF = async (guests, tables) => {
 
     let currentY = 30;
 
+    const buildBody = (table) => guests
+        .filter(g => g.table_id === table.id)
+        .map(g => {
+            let imeRedak = g.name;
+            if (g.plus_one && g.plus_one_name) {
+                imeRedak += `\n${g.plus_one_name}`;
+            }
+            return [imeRedak];
+        });
+
+    const tableOptions = {
+        theme: 'grid',
+        headStyles: { fillColor: [184, 146, 106], font: "Roboto", fontStyle: "bold" },
+        styles: { fontSize: 10, font: "Roboto", cellPadding: 2 },
+        // Ne cijepaj listu gostiju jednog stola nasred - ako ne stane, cijela tablica ide na novu stranicu
+        pageBreak: 'avoid',
+    };
+
     // Petlja po parovima stolova
     for (let i = 0; i < tables.length; i += 2) {
         const leftTable = tables[i];
@@ -43,51 +61,52 @@ const ExportTablesToPDF = async (guests, tables) => {
         }
 
         const startY = currentY;
+        const pageBeforeLeft = doc.internal.getNumberOfPages();
 
         // Lijeva kolona
         autoTable(doc, {
             startY: startY,
             margin: { left: 14, right: 115 },
             head: [[`Stol br. ${leftTable.table_number}`]],
-            body: guests
-            .filter(g => g.table_id === leftTable.id)
-            .map(g => {
-                let imeRedak = g.name;
-                if (g.plus_one && g.plus_one_name) {
-                    imeRedak += `\n${g.plus_one_name}`;
-                }
-                return [imeRedak];
-            }),
-            theme: 'grid',
-            headStyles: { fillColor: [184, 146, 106], font: "Roboto", fontStyle: "bold" },
-            styles: { fontSize: 10, font: "Roboto", cellPadding: 2 }
+            body: buildBody(leftTable),
+            ...tableOptions,
         });
 
+        const leftEndPage = doc.internal.getNumberOfPages();
         const leftHeight = doc.lastAutoTable.finalY;
 
-        // Desna kolona (ako postoji)
+        let rightHeight = leftHeight;
+
         if (rightTable) {
+            // Ako je lijeva tablica interno prebacila dokument na novu stranicu (jer se nije uklopila),
+            // desna tablica mora krenuti na TOJ istoj novoj stranici, ne na staroj startY poziciji.
+            const leftMovedPage = leftEndPage > pageBeforeLeft;
+            const rightStartY = leftMovedPage ? 20 : startY;
+
+            if (leftMovedPage) {
+                doc.setPage(leftEndPage);
+            }
+
+            const pageBeforeRight = doc.internal.getNumberOfPages();
+
+            // Desna kolona
             autoTable(doc, {
-                startY: startY,
+                startY: rightStartY,
                 margin: { left: 115, right: 14 },
                 head: [[`Stol br. ${rightTable.table_number}`]],
-                // ... i potpuno isto za desnu tablicu
-                body: guests
-                .filter(g => g.table_id === rightTable.id)
-                .map(g => {
-                let imeRedak = g.name;
-                if (g.plus_one && g.plus_one_name) {
-                    imeRedak += `\n${g.plus_one_name}`;
-                }
-                return [imeRedak];
-            }),
-                theme: 'grid',
-                headStyles: { fillColor: [184, 146, 106], font: "Roboto", fontStyle: "bold" },
-                styles: { fontSize: 10, font: "Roboto", cellPadding: 2 }
+                body: buildBody(rightTable),
+                ...tableOptions,
             });
-        }
 
-        const rightHeight = doc.lastAutoTable.finalY;
+            rightHeight = doc.lastAutoTable.finalY;
+
+            const rightMovedPage = doc.internal.getNumberOfPages() > pageBeforeRight;
+            if (rightMovedPage) {
+                // Desna je sama otišla na novu stranicu (dok lijeva nije) - prati tu novu poziciju
+                currentY = rightHeight + 10;
+                continue;
+            }
+        }
 
         // Pomakni se na dno najduže tablice u paru + razmak
         currentY = Math.max(leftHeight, rightHeight) + 10;

@@ -3,7 +3,7 @@ import { Dot } from "lucide-react";
 
 const TaskDashboard = ({ taskName, category, date }) => {
   return (
-    <div className="px-3 flex items-center justify-between w-full py-3.5 hover:bg-[#8B6B47]/5 hover:rounded-2xl">
+    <div className="flex items-center justify-between w-full py-3.5 hover:bg-[#8B6B47]/5 hover:rounded-2xl">
       <div className="flex items-start gap-2">
         <Dot className="w-6 h-6 md:w-8 md:h-8 text-[#B8926A] hover:text-[#8B6B47] shrink-0 mt-1.5" />
 

@@ -12,6 +12,7 @@ import AddTask from "../components/addTask";
 import { useQueryClient } from "@tanstack/react-query";
 import AddItem from "../components/addItem";
 import { useRef } from "react";
+import PricingNotification from "../components/pricingNotification";
 
 const Dashboard = () => {
 
@@ -270,6 +271,7 @@ const Dashboard = () => {
 
   return (
     <div className="h-dvh w-screen flex overflow-hidden bg-[#fcfbfa] relative">
+      <PricingNotification />
       {isSidebarOpen && (
         <div
           className="fixed inset-0 bg-black/40 backdrop-blur-xs z-30 lg:hidden"
