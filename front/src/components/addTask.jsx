@@ -82,8 +82,8 @@ const AddTask = ({ onClose, onSave, partners }) => {
                         </select>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="min-w-0 flex flex-col gap-1.5">
+                    <div className="flex flex-col md:grid md:grid-cols-2 gap-4 items-center">
+                        <div className="flex min-w-0 flex-col gap-1.5 w-full">
                             <label className="text-sm font-semibold text-gray-600">Kategorija *</label>
                             <select
                                 name="task_category"
@@ -102,7 +102,7 @@ const AddTask = ({ onClose, onSave, partners }) => {
                             </select>
                         </div>
 
-                        <div className="flex flex-col gap-1.5">
+                        <div className="flex flex-col gap-1.5 w-full">
                             <label className="text-sm font-semibold text-gray-600">Datum dospijeća *</label>
                             <input
                                 type="date"
@@ -110,7 +110,8 @@ const AddTask = ({ onClose, onSave, partners }) => {
                                 min={new Date().toISOString().split('T')[0]}
                                 value={taskData.task_due_date}
                                 onChange={handleChange}
-                                className="w-full h-12 bg-white border box-border border-gray-200 rounded-xl px-4 focus:ring-2 focus:ring-[#B8926A]/20 focus:border-[#B8926A] transition outline-hidden text-gray-700"
+                                style={{ WebkitAppearance: 'none', lineHeight: '3rem' }}
+                                className="w-full max-w-full h-12 bg-white border box-border border-gray-200 rounded-xl px-4 focus:ring-2 focus:ring-[#B8926A]/20 focus:border-[#B8926A] transition outline-hidden text-gray-700 block"
                                 required
                             />
                         </div>

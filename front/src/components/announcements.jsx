@@ -43,9 +43,9 @@ const Announcements = ({page}) => {
     };
 
     return (
-        <div className="flex flex-col gap-2 mb-4">
+        <div className="flex flex-col gap-2 mb-4 w-full">
             {relevant.map((item) => (
-                <div key={item.id} className="flex items-start gap-3 bg-[#B8926A]/10 border border-[#B8926A]/30 rounded-2xl px-4 py-3.5">
+                <div key={item.id} className="flex items-start gap-3 bg-[#B8926A]/10 border border-[#B8926A]/30 rounded-2xl px-4 py-3.5 w-full">
                     <div className="flex-1 flex items-start gap-2">
                         <Sparkles className="hidden display:block w-5 h-5 text-[#B8926A]"/>
                         <div className="flex flex-col gap-0">

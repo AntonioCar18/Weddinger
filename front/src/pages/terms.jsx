@@ -82,6 +82,7 @@ const Terms = () => {
                 <Section title="11. Prekid usluge i brisanje računa">
                     <p>Korisnik može u svakom trenutku samostalno obrisati svoj korisnički račun putem postavki aplikacije, čime se trajno brišu svi povezani podaci. Pružatelj usluge zadržava pravo ukinuti pristup Korisniku koji krši ove Uvjete.</p>
                     <p>S obzirom na to da je usluga namijenjena isključivo planiranju vjenčanja, korisnički račun i svi povezani podaci automatski se trajno brišu iz sustava <strong className="text-gray-800">7 dana</strong> nakon datuma vjenčanja koji je Korisnik unio u aplikaciju. Korisniku se preporučuje da prije tog roka preuzme i pohrani sve podatke koje želi zadržati (npr. popis gostiju, proračun, dokumente).</p>
+                    <p>Datum brisanja računa računa se na temelju datuma vjenčanja koji je Korisnik prvi put unio u aplikaciju te se naknadnim izmjenama tog datuma ne mijenja automatski. Korisnik koji je stvarno pomaknuo datum vjenčanja i želi produžiti rok korištenja može se obratiti Pružatelju usluge na <a href="mailto:helpdesk@weddinger.com.hr" className="text-[#B8926A] font-semibold hover:underline">helpdesk@weddinger.com.hr</a> radi ručne prilagodbe.</p>
                 </Section>
 
                 <Section title="12. Izmjene Uvjeta">

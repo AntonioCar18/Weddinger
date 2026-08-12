@@ -1,7 +1,10 @@
 import { Plus } from "lucide-react";
 import { useState } from "react";
+import ErrorModal from "./errorModal";
 
 const AddItem = ({ onSave, onClose }) => {
+
+    const [errorModal, setErrorModal] = useState(false);
 
     const [data, setData] = useState({
         itemName: "",
@@ -35,9 +38,15 @@ const AddItem = ({ onSave, onClose }) => {
     const HandleSubmit = async (e) => {
         e.preventDefault();
 
-        let status = "Na čekanju";
         const total = parseFloat(data.totalPrice) || 0;
         const deposit = parseFloat(data.prePaidAmount) || 0;
+
+        if (data.isPaid === "Da" && deposit > total) {
+            setErrorModal(true);
+            return;
+        }
+
+        let status = "Na čekanju";
 
         if (deposit >= total && total > 0) {
             status = "Plaćeno";
@@ -202,6 +211,13 @@ const AddItem = ({ onSave, onClose }) => {
                     </div>
                 </form>
             </div>
+
+            {errorModal && (
+                <ErrorModal 
+                  onCancel={() => setErrorModal(false)}
+                  desc="Iznos kapare je veći od ukupnog iznosa usluge. Molimo Vas da to ispravite."
+                />
+            )}
         </div>
     );
 }

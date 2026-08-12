@@ -11,6 +11,7 @@ const Documents = () => {
 
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [documentToDelete, setDocumentToDelete] = useState(null);
     const fileInputRef = useRef(null);
     const navigate = useNavigate();
 
@@ -137,7 +138,7 @@ const Documents = () => {
             </div>
 
             <div className="flex flex-1 h-dvh bg-[#fcfbfa] overflow-auto">
-                <div className="flex flex-col w-full h-full relative pb-10">
+                <div className="flex flex-col w-full h-full relative pb-28 lg:pb-10">
                     <div className="flex px-4 md:px-10 lg:px-16 pt-6 lg:pt-12 pb-4 items-center justify-between w-full border-b lg:border-none border-gray-100 bg-white lg:bg-transparent">
                         <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-2 text-gray-600 hover:bg-gray-50 rounded-lg mr-2">
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
@@ -182,7 +183,7 @@ const Documents = () => {
                             </div>
                         </div>
                     </div>
-                    <div className="flex flex-col px-4 md:px-10 lg:px-16 pt-6 lg:pt-6 pb-4 items-start justify-between w-full">
+                    <div className="flex flex-col px-4 md:px-10 lg:px-16 pt-6 lg:pt-6 pb-6 items-start justify-between w-full">
                         <div className="flex flex-col w-full ml-2 md:ml-0">
                             <h2 className="text-2xl font-bold tracking-tight">Svi dokumenti</h2>
                             <p className="text-sm text-gray-500">Dokumente sa sustava pronađite niže</p>
@@ -220,8 +221,10 @@ const Documents = () => {
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <Download className="w-5 h-5 text-yellow-500 hover:text-yellow-700 cursor-pointer" onClick={() => downloadFile(doc.id)} />
-                                            <Trash className="w-5 h-5 text-red-500 hover:text-red-700 cursor-pointer" 
-                                            onClick={() => setShowDeleteModal(true)} />
+                                            <Trash
+                                                className="w-5 h-5 text-red-500 hover:text-red-700 cursor-pointer"
+                                                onClick={() => { setDocumentToDelete(doc.id); setShowDeleteModal(true); }}
+                                            />
                                         </div>
                                     </div>
                                 ))}
@@ -233,24 +236,18 @@ const Documents = () => {
 
             {showDeleteModal && (
                 <DeleteModal
-                    onCancel={() => setShowDeleteModal(false)}
+                    onCancel={() => { setShowDeleteModal(false); setDocumentToDelete(null); }}
                     onDelete={() => {
-                        const selectedDocumentId = documentResponse.data[0]?.id; // Replace with actual logic to get the selected document ID
-                        if (selectedDocumentId) {
-                            deleteFile(selectedDocumentId);
+                        if (documentToDelete) {
+                            deleteFile(documentToDelete);
                         }
                         setShowDeleteModal(false);
+                        setDocumentToDelete(null);
                     }}
                     desc="Jeste li sigurni da želite obrisati ovaj dokument? Ova akcija je nepovratna."
                     deleteText="Da, obriši dokument"
                 />
             )}
-
-            <button
-                onClick={() => fileInputRef.current.click()} 
-                className="lg:hidden fixed bottom-8 right-6 bg-linear-to-r from-[#c39d76] to-[#8B6B47] text-white p-4 rounded-full shadow-lg shadow-[#B8926A]/40 active:scale-95 transition-all duration-200 z-40 flex items-center justify-center cursor-pointer">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" /></svg>
-            </button>
         </div>
     )
 };

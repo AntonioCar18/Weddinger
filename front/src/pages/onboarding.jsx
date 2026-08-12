@@ -84,6 +84,9 @@ const Onboarding = () => {
         getInfo();
     }, []);
 
+    const today = new Date().toISOString().split('T')[0]
+    console.log(today)
+
     return (
         <div
             className="fixed inset-0 bg-fixed bg-cover bg-center items-center justify-center flex flex-col p-8 overflow-y-auto"
@@ -129,43 +132,43 @@ const Onboarding = () => {
             </div>
             <div className="bg-white p-8 w-full max-w-lg rounded-b-2xl">
                 { step === 1 && (
-                <div>
-                    <div className="flex flex-col md:flex-row gap-4">
-                        <div className="flex flex-col gap-2 w-full">
-                            <label className="text-xs font-semibold text-[#a39d90] uppercase tracking-wider block">Ime partnera 1 *</label>
-                            <input required value={partnerOneName} onChange={(e) => setPartnerOneName(e.target.value)} placeholder="Ana" className="border border-gray-300 rounded-xl py-2 px-4 focus:outline-none focus:ring-2 focus:ring-gray-400 text-gray-800 transition" type="text" />
+                    <div>
+                        <div className="flex flex-col md:flex-row gap-4">
+                            <div className="flex flex-col gap-2 w-full md:w-1/2">
+                                <label className="text-xs font-semibold text-[#a39d90] uppercase tracking-wider block">Ime partnera 1 *</label>
+                                <input required value={partnerOneName} onChange={(e) => setPartnerOneName(e.target.value)} placeholder="Ana" className="w-full border border-gray-300 rounded-xl py-2 px-4 focus:outline-none focus:ring-2 focus:ring-gray-400 text-gray-800 transition" type="text" />
+                            </div>
+                            <div className="flex flex-col gap-2 w-full md:w-1/2">
+                                <label className="text-xs font-semibold text-[#a39d90] uppercase tracking-wider block">Ime partnera 2 *</label>
+                                <input required value={partnerTwoName} onChange={(e) => setPartnerTwoName(e.target.value)} placeholder="Marko" className="w-full border border-gray-300 rounded-xl py-2 px-4 focus:outline-none focus:ring-2 focus:ring-gray-400 text-gray-800 transition" type="text" />
+                            </div>
                         </div>
-                        <div className="flex flex-col gap-2 w-full">
-                            <label className="text-xs font-semibold text-[#a39d90] uppercase tracking-wider block">Ime partnera 2 *</label>
-                            <input required value={partnerTwoName} onChange={(e) => setPartnerTwoName(e.target.value)} placeholder="Marko" className="border border-gray-300 rounded-xl py-2 px-4 focus:outline-none focus:ring-2 focus:ring-gray-400 text-gray-800 transition" type="text" />
+                        <div className="flex flex-col md:flex-row gap-4 mt-4">
+                            <div className="flex-col gap-2 w-full hidden md:flex md:w-1/2">
+                                <label className="text-xs font-semibold text-[#a39d90] uppercase tracking-wider block">Registracijski email *</label>
+                                <input readOnly disabled value={partnerOneEmail} onChange={(e) => setPartnerOneEmail(e.target.value)} placeholder="ana@example.com" className="w-full border border-gray-300 rounded-xl py-2 px-4 focus:outline-none focus:ring-2 focus:ring-gray-400 text-gray-500 transition" type="email" />
+                            </div>
+                            <div className="flex flex-col gap-2 w-full md:w-1/2">
+                                <label className="text-xs font-semibold text-[#a39d90] uppercase tracking-wider block">Dodatni email</label>
+                                <input value={partnerTwoEmail} onChange={(e) => setPartnerTwoEmail(e.target.value)} placeholder="marko@example.com" className="w-full border border-gray-300 rounded-xl py-2 px-4 focus:outline-none focus:ring-2 focus:ring-gray-400 text-gray-800 transition" type="email" />
+                            </div>
+                        </div>
+                        <div className={`flex ${missingFields ? 'justify-between items-center' : 'justify-end'} mt-10 md:mt-15`}>
+                            {missingFields && (
+                                <p className="text-[#a39d90] text-sm font-bold">* Molimo popunite sva obavezna polja</p>
+                            )}
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    {(!partnerOneName || !partnerTwoName)
+                                        ? setMissingFields(true)
+                                        : (setStep(step + 1), setMissingFields(false))
+                                    }}
+                                className="cursor-pointer bg-linear-to-r from-[#c39d76] to-[#8B6B47] text-white font-semibold py-2 px-6 rounded-xl hover:bg-[#8c7b6b] transition">
+                            Nastavi</button>
                         </div>
                     </div>
-                    <div className="flex flex-col md:flex-row gap-4 mt-4">
-                        <div className="flex-col gap-2 w-full hidden md:flex">
-                            <label className="text-xs font-semibold text-[#a39d90] uppercase tracking-wider block">Registracijski email *</label>
-                            <input readOnly disabled value={partnerOneEmail} onChange={(e) => setPartnerOneEmail(e.target.value)} placeholder="ana@example.com" className="border border-gray-300 rounded-xl py-2 px-4 focus:outline-none focus:ring-2 focus:ring-gray-400 text-gray-500 transition" type="email" />
-                        </div>
-                        <div className="flex flex-col gap-2 w-full">
-                            <label className="text-xs font-semibold text-[#a39d90] uppercase tracking-wider block">Dodatni email</label>
-                            <input value={partnerTwoEmail} onChange={(e) => setPartnerTwoEmail(e.target.value)} placeholder="marko@example.com" className="border border-gray-300 rounded-xl py-2 px-4 focus:outline-none focus:ring-2 focus:ring-gray-400 text-gray-800 transition" type="email" />
-                        </div>
-                    </div>
-                    <div className={`flex ${missingFields ? 'justify-between items-center' : 'justify-end'} mt-10 md:mt-15`}>
-                        {missingFields && (
-                            <p className="text-[#a39d90] text-sm font-bold">* Molimo popunite sva obavezna polja</p>
-                        )}
-                        <button
-                            type="button"
-                            onClick={() =>
-                                {(!partnerOneName || !partnerTwoName)
-                                    ? setMissingFields(true)
-                                    : (setStep(step + 1), setMissingFields(false))
-                                }}
-                            className="cursor-pointer bg-linear-to-r from-[#c39d76] to-[#8B6B47] text-white font-semibold py-2 px-6 rounded-xl hover:bg-[#8c7b6b] transition">
-                        Nastavi</button>
-                    </div>
-                </div>
-                )}
+                    )}
                 { step === 2 && (
                     <div>
                         <div className="flex flex-col md:flex-row gap-4">
@@ -174,14 +177,14 @@ const Onboarding = () => {
                                     <Star className="w-3 h-3 text-[#a39d90] mr-1" />
                                     <label className="text-xs font-semibold text-[#a39d90] uppercase tracking-wider block">Datum zaruka *</label>
                                 </div>
-                                <input required value={engagementDate} onChange={(e) => setEngagementDate(e.target.value)} placeholder="28. svibnja 2027." className="border border-gray-300 rounded-xl py-2 px-4 focus:outline-none focus:ring-2 focus:ring-gray-400 text-gray-800 transition" type="date" />
+                                <input required value={engagementDate} max={today} onChange={(e) => setEngagementDate(e.target.value)} placeholder="28. svibnja 2027." className="border border-gray-300 rounded-xl py-2 px-4 focus:outline-none focus:ring-2 focus:ring-gray-400 text-gray-800 transition" type="date" />
                             </div>
                             <div className="flex flex-col gap-2 w-full">
                                 <div className="flex items-center">
                                     <Calendar className="w-3 h-3 text-[#a39d90] mr-1" />
                                     <label className="text-xs font-semibold text-[#a39d90] uppercase tracking-wider block">Datum vjenčanja</label>
                                 </div>
-                                 <input value={weddingDate} onChange={(e) => setWeddingDate(e.target.value)} placeholder="28. svibnja 2027." className="border border-gray-300 rounded-xl py-2 px-4 focus:outline-none focus:ring-2 focus:ring-gray-400 text-gray-800 transition" type="date" />
+                                 <input value={weddingDate} min={today} onChange={(e) => setWeddingDate(e.target.value)} placeholder="28. svibnja 2027." className="border border-gray-300 rounded-xl py-2 px-4 focus:outline-none focus:ring-2 focus:ring-gray-400 text-gray-800 transition" type="date" />
                             </div>
                         </div>
                         <div className="flex flex-col gap-2 w-full mt-4">

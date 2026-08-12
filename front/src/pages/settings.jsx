@@ -7,6 +7,7 @@ import { useQueryClient, useQuery } from "@tanstack/react-query";
 import ConfirmationModalDelete from "../components/confirmationModalDelete";
 import ErrorModal from "../components/errorModal";
 import LoginModal from "../components/loginModal";
+import Announcements from "../components/Announcements";
 
 const Settings = () => {
 
@@ -179,6 +180,9 @@ const Settings = () => {
                 method: "DELETE",
                 credentials: "include",
             });
+            if (response.ok) {
+                console.log("Korisnik je uspješno obrisan");
+            }
         } catch (error) {
             console.error("Greška prilikom brisanja računa:", error);
         }
@@ -260,6 +264,8 @@ const Settings = () => {
         return () => clearTimeout(timer);
     }, [showSuccessEmail]);
 
+    const today = new Date().toISOString().split('T')[0]
+
     return (
         <div className="h-screen flex overflow-hidden bg-[#fcfbfa] relative">
             {isSidebarOpen && (
@@ -296,6 +302,7 @@ const Settings = () => {
                     </div>
 
                     <div className="flex-1 flex flex-col px-4 md:px-10 lg:px-16 py-4 space-y-6 pb-6 pt-4">
+                        <Announcements page="settings"/>
                         <div className="flex flex-col bg-white rounded-2xl border border-[#efe9e0] shadow-sm hover:shadow-md transition-shadow duration-200 p-8 w-full">
                             <div className="flex items-center gap-4">
                                 <div className="flex bg-[#B8926A]/10 rounded-xl p-2.5">
@@ -343,8 +350,13 @@ const Settings = () => {
                                         <input
                                             className="border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#B8926A]/25 focus:border-[#B8926A] transition-all"
                                             type="date"
+                                            max={today}
                                             value={engagementDate?.engagement_date || ""}
-                                            onChange={(e) => setEngagementDate({ engagement_date: e.target.value })}
+                                            onChange={(e) => {
+                                                const value = e.target.value;
+                                                if (value && value > today) return;
+                                                setEngagementDate({ engagement_date: value });
+                                            }}
                                         />
                                     </div>
                                 </div>
@@ -357,8 +369,13 @@ const Settings = () => {
                                         <input
                                             className="border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#B8926A]/25 focus:border-[#B8926A] transition-all"
                                             type="date"
+                                            min={today}
                                             value={date?.wedding_date || ""}
-                                            onChange={(e) => setDate({ wedding_date: e.target.value })}
+                                            onChange={(e) => {
+                                                const value = e.target.value;
+                                                if (value && value < today) return;
+                                                setDate({ wedding_date: value });
+                                            }}
                                         />
                                     </div>
                                 </div>

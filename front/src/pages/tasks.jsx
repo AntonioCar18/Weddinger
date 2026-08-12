@@ -197,7 +197,7 @@ const Tasks = () => {
                         </button>
                     </div>
 
-                    <div className="px-4 md:px-10 lg:px-16 py-4 flex flex-col lg:flex-row gap-8 lg:gap-6 h-fit pb-6 pt-4">
+                    <div className="px-4 md:px-10 lg:px-16 py-4 flex flex-col lg:flex-row gap-8 lg:gap-6 h-fit pb-4 pt-4">
                         
                         <div className="flex flex-col rounded-2xl bg-white border border-[#efe9e0] justify-center shadow-sm hover:shadow-xl transition-shadow duration-200 lg:w-1/3 p-8">
                             <div className="flex items-center gap-3">
@@ -253,7 +253,7 @@ const Tasks = () => {
                         </div>
                     </div>
 
-                    <div className="flex w-full flex-col gap-8 px-4 md:px-10 lg:px-16 py-4">
+                    <div className="flex w-full flex-col gap-4 md:gap-8 px-4 md:px-10 lg:px-16 py-6">
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 ml-2 md:ml-0">
                             <div>
                                 <h2 className='text-3xl font-extrabold text-gray-900 tracking-tight'>Vaši zadaci</h2>
@@ -309,7 +309,7 @@ const Tasks = () => {
                     </div> 
                 </div>
             </div>
-            <button onClick={() => setIsAddTaskOpen(true)} className="lg:hidden fixed bottom-8 right-6 bg-linear-to-r from-[#c39d76] to-[#8B6B47] text-white p-4 rounded-full shadow-lg shadow-[#B8926A]/40 active:scale-95 transition-all duration-200 z-40 flex items-center justify-center cursor-pointer">
+            <button onClick={() => setIsAddTaskOpen(true)} className="lg:hidden fixed bottom-12 right-6 bg-linear-to-r from-[#c39d76] to-[#8B6B47] text-white p-4 rounded-full shadow-lg shadow-[#B8926A]/40 active:scale-95 transition-all duration-200 z-40 flex items-center justify-center cursor-pointer">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" /></svg>
             </button>
             {isAddTaskOpen && <AddTask onSave={newTask} onClose={() => setIsAddTaskOpen(false)} partners={partners} />}

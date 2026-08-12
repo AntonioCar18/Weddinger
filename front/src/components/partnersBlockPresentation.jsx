@@ -39,7 +39,7 @@ const PartnersBlockPresentation = ({ icon_partners: Icon, title, desc, location,
                 </button>
                 <div className="bg-linear-to-r from-[#c39d76] to-[#8B6B47] w-full justify-center flex items-center gap-2 rounded-2xl border border-gray-200 px-3 py-3 text-sm text-gray-700 font-semibold">
                     <button className="cursor-pointer w-full text-center text-sm font-semibold text-white transition-colors">
-                        <a href={social || "#"} target="_blank">Posjetite stranicu</a>
+                        <a href={social || "#"} target="_blank">Posjetite</a>
                     </button>
                 </div>
             </div>

@@ -13,6 +13,7 @@ import Documents from "./pages/documents";
 import Onboarding from "./pages/onboarding";
 import Privacy from "./pages/privacy";
 import Terms from "./pages/terms";
+import FAQ from "./pages/FAQ";
 
 // 2. Kreiraj instancu klijenta izvan komponente da se ne re-kreira kod svakog rendera
 export const queryClient = new QueryClient({
@@ -57,6 +58,7 @@ function App() {
             <Route path="/tasks" element={<Tasks />} />
             <Route path="/partners" element={<Partners />} />
             <Route path="/documents" element={<Documents />} />
+            <Route path="/FAQ" element={<FAQ />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/onboarding" element={<Onboarding />} />
 

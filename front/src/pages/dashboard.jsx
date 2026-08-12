@@ -13,6 +13,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import AddItem from "../components/addItem";
 import { useRef } from "react";
 import PricingNotification from "../components/pricingNotification";
+import Announcements from "../components/Announcements";
 
 const Dashboard = () => {
 
@@ -317,7 +318,9 @@ const Dashboard = () => {
               </p>
             </div>
           </div>
-
+          <div className="px-4 md:px-10 lg:px-16 flex flex-col lg:flex-row lg:gap-6 pt-4 md:pt-2 w-full">
+            <Announcements page="dashboard" className="flex-1" />
+          </div>
           <div className="px-4 md:px-10 lg:px-16 flex flex-col lg:flex-row gap-8 lg:gap-6 h-fit pb-6 pt-4">
             <div className="relative w-full min-h-60 md:min-h-65 h-auto md:h-72 rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl">
               <div

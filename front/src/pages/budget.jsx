@@ -214,7 +214,7 @@ const Budget = () => {
                         </div>
                     </div>
 
-                    <div className="flex flex-col lg:flex-row flex-1 px-6 md:px-10 lg:px-16 py-4 gap-8 pb-4 lg:pb-8 items-stretch">
+                    <div className="flex flex-col lg:flex-row flex-1 px-6 md:px-10 lg:px-16 py-4 gap-8 pb-6 lg:pb-8 items-stretch">
                         <div className="flex flex-col w-full lg:w-1/3 gap-8">
                             <BudgetGraph budget={total_budget} used={used_budget}/>
                             <TipsTricksBudget />

@@ -105,6 +105,17 @@ export default function Sidebar({ activeTab }) {
             )
         },
         {
+            name: "FAQ",
+            path: "/FAQ",
+            icon: (
+                <>
+                    <circle cx="12" cy="12" r="9" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+                </>
+            )
+        },
+        {
             name: "Postavke",
             path: "/settings",
             icon: (
