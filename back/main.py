@@ -473,6 +473,15 @@ def verify_email(data: VerifyEmailModel):
 @app.delete("/api/me")
 def delete_account(current_user: dict = Depends(get_current_user)):
     user_id = current_user.get("sub")
+
+    docs = takeFromBase("SELECT storage_key FROM documents WHERE user_id = %s;", (user_id,))
+    if docs:
+        for doc in docs:
+            try:
+                minio_client.remove_object(MINIO_BUCKET, doc["storage_key"])
+            except S3Error as e:
+                print(f"Greška pri brisanju datoteke {doc['storage_key']} iz MinIO-a: {e}")
+
     success = executeQuery("DELETE FROM users WHERE id = %s;", (user_id,))
     if success:
         return {"message": "Obrisano"}
