@@ -1,6 +1,6 @@
 import datetime
 import os
-from datetime import timedelta
+from datetime import date, timedelta
 from typing import Optional
 from fastapi import FastAPI, Depends, HTTPException, Response, Cookie
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,17 +16,14 @@ from minio.error import S3Error
 from fastapi import UploadFile, File
 from fastapi.responses import StreamingResponse
 import random
-import smtplib
-from email.mime.text import MIMEText
 from typing import Optional, List
 import requests
-from email.mime.multipart import MIMEMultipart
-from email.mime.application import MIMEApplication
 from pydantic import BaseModel, EmailStr
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import StreamingResponse, JSONResponse
 
 from database import takeFromBase, executeQuery
+from email_service import send_email
 
 load_dotenv()
 
@@ -36,12 +33,6 @@ MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT")
 MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY")
 MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY")
 MINIO_BUCKET = os.getenv("MINIO_BUCKET")
-
-SMTP_HOST = os.getenv("SMTP_HOST")
-SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
-SMTP_USER = os.getenv("SMTP_USER")
-SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
-SMTP_FROM = os.getenv("SMTP_FROM", SMTP_USER)
 
 SOLO_API_TOKEN = os.getenv("SOLO_API_TOKEN")
 SOLO_SERVICE_TYPE_ID = os.getenv("SOLO_SERVICE_TYPE_ID")
@@ -68,27 +59,6 @@ async def validation_exception_handler(request, exc):
     else:
         message = "Neispravno popunjen obrazac. Provjerite unesene podatke."
     return JSONResponse(status_code=422, content={"detail": message})
-
-def send_email(to: str, subject: str, body: str, is_html: bool = False, attachment_bytes: bytes = None, attachment_filename: str = None):
-    body_part = MIMEText(body, 'html' if is_html else 'plain', 'utf-8')
-
-    if attachment_bytes and attachment_filename:
-        msg = MIMEMultipart()
-        msg.attach(body_part)
-        part = MIMEApplication(attachment_bytes, Name=attachment_filename)
-        part['Content-Disposition'] = f'attachment; filename="{attachment_filename}"'
-        msg.attach(part)
-    else:
-        msg = body_part
-
-    msg["Subject"] = subject
-    msg["From"] = SMTP_FROM
-    msg["To"] = to
-
-    with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
-        server.starttls()
-        server.login(SMTP_USER, SMTP_PASSWORD)
-        server.sendmail(SMTP_FROM, [to], msg.as_string())
 
 def create_solo_offer(email: str):
     data = {
@@ -225,7 +195,7 @@ class TaskModel(BaseModel):
     task_due_date: Optional[str] = None
     task_is_completed: bool = False
     task_notes: Optional[str] = None
-    
+
 class StatusUpdateModel(BaseModel):
     is_completed: bool
 
@@ -242,7 +212,7 @@ class UpdatePasswordModel(BaseModel):
     new_password: str
 
 class EngagementDateModel(BaseModel):
-    engagement_date: str    
+    engagement_date: str
 
 class UpdateDateModel(BaseModel):
     wedding_date: str
@@ -327,8 +297,9 @@ def update_engagement_date(update_data: EngagementDateModel, current_user: dict 
 @app.put("/api/me/date")
 def update_date(update_data: UpdateDateModel, current_user: dict = Depends(get_current_user)):
     user_id = current_user.get("sub")
-    query = "UPDATE users SET wedding_date = %s WHERE id = %s;"
-    success = executeQuery(query, (update_data.wedding_date, user_id))
+    wedding_date = update_data.wedding_date or None
+    query = "UPDATE users SET wedding_date = %s, delete_date = COALESCE(delete_date, (%s::date + interval '7 days')::date) WHERE id = %s;"
+    success = executeQuery(query, (wedding_date, wedding_date, user_id))
     if success:
         return {"message": "Uspješno ažurirano"}
     else:
@@ -502,6 +473,15 @@ def verify_email(data: VerifyEmailModel):
 @app.delete("/api/me")
 def delete_account(current_user: dict = Depends(get_current_user)):
     user_id = current_user.get("sub")
+
+    docs = takeFromBase("SELECT storage_key FROM documents WHERE user_id = %s;", (user_id,))
+    if docs:
+        for doc in docs:
+            try:
+                minio_client.remove_object(MINIO_BUCKET, doc["storage_key"])
+            except S3Error as e:
+                print(f"Greška pri brisanju datoteke {doc['storage_key']} iz MinIO-a: {e}")
+
     success = executeQuery("DELETE FROM users WHERE id = %s;", (user_id,))
     if success:
         return {"message": "Obrisano"}
@@ -514,8 +494,9 @@ def onboarding(onboarding_data: OnboardingModel, current_user: dict = Depends(ge
     wedding_date = onboarding_data.wedding_date or None
     engagement_date = onboarding_data.engagement_date or None
     wedding_location = onboarding_data.wedding_location or None
-    query = "UPDATE users SET partner_one = %s, partner_two = %s, email = %s, wedding_date = %s, wedding_location = %s, engagement_date = %s, onboarding_completed = true WHERE id = %s;"
-    success = executeQuery(query, (onboarding_data.partner_one, onboarding_data.partner_two, onboarding_data.email, wedding_date, wedding_location, engagement_date, user_id))
+    delete_date = (date.fromisoformat(wedding_date)) + timedelta(days=7) if wedding_date else None
+    query = "UPDATE users SET partner_one = %s, partner_two = %s, email = %s, wedding_date = %s, wedding_location = %s, engagement_date = %s, onboarding_completed = true, delete_date = %s WHERE id = %s;"
+    success = executeQuery(query, (onboarding_data.partner_one, onboarding_data.partner_two, onboarding_data.email, wedding_date, wedding_location, engagement_date, delete_date, user_id))
 
     if not success:
         raise HTTPException(status_code=500, detail="Greška pri završetku onboardinga")
@@ -581,7 +562,7 @@ def pricing_onboarding_seen(current_user: dict = Depends(get_current_user)):
     else:
         raise HTTPException(status_code=500, detail="Pogreška prilikom ažuriranja.")
 
-    
+
 # Gosti
 
 @app.get("/api/guests")
@@ -672,7 +653,7 @@ def move_guest(guest_id: int, data: MoveGuestRequest, current_user: dict = Depen
 
     if data.table_id is None:
         success = executeQuery(
-            "UPDATE guests SET table_id = NULL, table_number = NULL WHERE id = %s AND user_id = %s", 
+            "UPDATE guests SET table_id = NULL, table_number = NULL WHERE id = %s AND user_id = %s",
             (guest_id, user_id)
         )
         if not success:
@@ -688,25 +669,25 @@ def move_guest(guest_id: int, data: MoveGuestRequest, current_user: dict = Depen
     guest = takeFromBase("SELECT plus_one FROM guests WHERE id = %s AND user_id = %s", (guest_id, user_id))
     if not guest:
         raise HTTPException(status_code=404, detail="Gost nije pronađen")
-    
+
     guest_size = 1 + (1 if guest[0]['plus_one'] else 0)
 
     occupancy_data = takeFromBase("""
-        SELECT SUM(1 + CASE WHEN plus_one = true THEN 1 ELSE 0 END) as total 
-        FROM guests 
+        SELECT SUM(1 + CASE WHEN plus_one = true THEN 1 ELSE 0 END) as total
+        FROM guests
         WHERE table_id = %s AND id != %s
     """, (data.table_id, guest_id))
-    
+
     current_occupancy = occupancy_data[0]['total'] or 0
 
     if (current_occupancy + guest_size) > table_capacity:
         raise HTTPException(status_code=400, detail=f"Stol je popunjen! Kapacitet je {table_capacity}.")
 
     success = executeQuery(
-        "UPDATE guests SET table_id = %s, table_number = %s WHERE id = %s AND user_id = %s", 
+        "UPDATE guests SET table_id = %s, table_number = %s WHERE id = %s AND user_id = %s",
         (data.table_id, table_number, guest_id, user_id)
     )
-    
+
     return {"success": True, "table_id": data.table_id, "table_number": table_number}
 
 # Stolovi
@@ -716,7 +697,7 @@ def add_table(table_data: TableModel, current_user: dict = Depends(get_current_u
     user_id = current_user.get("sub")
     query_max = "SELECT COALESCE(MAX(table_number), 0) + 1 AS next_num FROM tables WHERE user_id = %s;"
     next_number = takeFromBase(query_max, (user_id,))[0]['next_num']
-    
+
     insert_query = "INSERT INTO tables (user_id, table_number, capacity, table_notes) VALUES (%s, %s, %s, %s);"
     success = executeQuery(insert_query, (user_id, next_number, table_data.capacity, table_data.notes))
     return {"message": "Stol uspješno dodan"} if success else HTTPException(status_code=500)
@@ -724,7 +705,7 @@ def add_table(table_data: TableModel, current_user: dict = Depends(get_current_u
 @app.get("/api/tables")
 def get_tables(current_user: dict = Depends(get_current_user)):
     tables = takeFromBase("""
-        SELECT t.*, 
+        SELECT t.*,
                COALESCE(SUM(1 + CASE WHEN g.plus_one = true THEN 1 ELSE 0 END), 0) AS current_occupancy
         FROM tables t
         LEFT JOIN guests g ON g.table_id = t.id
@@ -808,7 +789,7 @@ def get_tasks(current_user: dict = Depends(get_current_user)):
 @app.get("/api/tasks/summary")
 def get_tasks_summary(current_user: dict = Depends(get_current_user)):
     query = """
-        SELECT 
+        SELECT
             category,
             COUNT(*) AS total_tasks,
             SUM(CASE WHEN is_completed THEN 1 ELSE 0 END) AS completed_tasks
@@ -858,7 +839,7 @@ def get_partners():
         "catering_partners": len([p for p in partners if p['partner_category'] == 'Catering/Vjenčanje']) if partners else 0,
         "flower_partners": len([p for p in partners if p['partner_category'] == 'Cvijeće/Dekoracije']) if partners else 0,
         "music_partners": len([p for p in partners if p['partner_category'] == 'Glazba/Pratnja/DJ']) if partners else 0,
-        "accommodation_partners": len([p for p in partners if p['partner_category'] == 'Smještaj']) if partners else 0      
+        "accommodation_partners": len([p for p in partners if p['partner_category'] == 'Smještaj']) if partners else 0
     }
 
 

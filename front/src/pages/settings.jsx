@@ -35,6 +35,8 @@ const Settings = () => {
     const [showCurrentPassword, setShowCurrentPassword] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [wrongEngagementDate, setWrongEngagementDate] = useState(false);
+    const [wrongWeddingDate, setWrongWeddingDate] = useState(false);
 
     const { data: userData } = useQuery({
         queryKey: ['user-profile'],
@@ -266,6 +268,12 @@ const Settings = () => {
 
     const today = new Date().toISOString().split('T')[0]
 
+    function formatTaskDate(dateString) {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("hr-HR", { day: "numeric", month: "long", year: "numeric"});
+  }
+
     return (
         <div className="h-screen flex overflow-hidden bg-[#fcfbfa] relative">
             {isSidebarOpen && (
@@ -354,7 +362,6 @@ const Settings = () => {
                                             value={engagementDate?.engagement_date || ""}
                                             onChange={(e) => {
                                                 const value = e.target.value;
-                                                if (value && value > today) return;
                                                 setEngagementDate({ engagement_date: value });
                                             }}
                                         />
@@ -373,7 +380,6 @@ const Settings = () => {
                                             value={date?.wedding_date || ""}
                                             onChange={(e) => {
                                                 const value = e.target.value;
-                                                if (value && value < today) return;
                                                 setDate({ wedding_date: value });
                                             }}
                                         />
@@ -400,7 +406,19 @@ const Settings = () => {
                                     {showSuccess && <span className="text-sm text-[#8B6B47] font-semibold">Promjene su uspješno spremljene!</span>}
                                 </p>
                                 <button
-                                    onClick={() => {updateNames(partnerNames); updateDate(date); updateLocation(location); updateEngagementDate(engagementDate);}}
+                                    onClick={() => {
+                                        if (engagementDate > today) {
+                                            setWrongEngagementDate(true);
+                                            return;
+                                        }
+                                        if (weddingDate && weddingDate < today) {
+                                            setWrongWeddingDate(true);
+                                            return;
+                                        }
+                                        updateNames(partnerNames); 
+                                        updateDate(date); 
+                                        updateLocation(location); 
+                                        updateEngagementDate(engagementDate);}}
                                     className="cursor-pointer bg-linear-to-br from-[#c39d76] to-[#8B6B47] text-white px-6 py-3 rounded-xl text-sm font-semibold shadow-md shadow-[#B8926A]/20 hover:shadow-lg active:scale-97 transition-all duration-200 disabled:opacity-60 w-full md:w-auto"
                                 >
                                     Spremi promjene
@@ -609,6 +627,20 @@ const Settings = () => {
                     icon={<Trophy className="w-6 h-6 text-green-500" />}
                     onCancel={() => setShowSuccessPassword(false)}
                     desc="Nova lozinka je uspješno postavljena. Prilikom sljedeće prijave morat ćete koristiti novu lozinku."
+                />
+            )}
+
+            {wrongEngagementDate && (
+                <ErrorModal 
+                    onCancel={() => setWrongEngagementDate(false)}
+                    desc={`Pogreška kod unosa datuma zaruka. Vrijednost ne može biti veća od današnjeg (${formatTaskDate(today)}) datuma.`}
+                />
+            )}
+
+            {wrongWeddingDate && (
+                <ErrorModal 
+                    onCancel={() => setWrongWeddingDate(false)}
+                    desc={`Pogreška kod unosa datuma vjenčanja. Vrijednost ne može biti manja od današnjeg (${formatTaskDate(today)}) datuma.`}
                 />
             )}
         </div>

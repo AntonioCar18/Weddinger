@@ -1,6 +1,7 @@
 import { Calendar, Dot, Heart, Locate, Star } from "lucide-react";
 import { useState } from "react";
 import { useEffect } from "react";
+import ErrorModal from "../components/errorModal";
 
 const TAG_OPTIONS = [
     { key: "crkveno", label: "⛪ Crkveno vjenčanje" },
@@ -23,6 +24,8 @@ const Onboarding = () => {
     const [missingFields, setMissingFields] = useState(false);
     const [taskStatus, setTaskStatus] = useState(false);
     const [selectedTags, setSelectedTags] = useState([]);
+    const [wrongEngagementDate, setWrongEngagementDate] = useState(false);
+    const [wrongWeddingDate, setWrongWeddingDate] = useState(false);
 
     const toggleTag = (tag) => {
         setSelectedTags((prev) =>
@@ -84,8 +87,13 @@ const Onboarding = () => {
         getInfo();
     }, []);
 
+    function formatTaskDate(dateString) {
+        if (!dateString) return "";
+        const date = new Date(dateString);
+        return date.toLocaleDateString("hr-HR", { day: "numeric", month: "long", year: "numeric"});
+    }
+
     const today = new Date().toISOString().split('T')[0]
-    console.log(today)
 
     return (
         <div
@@ -177,14 +185,28 @@ const Onboarding = () => {
                                     <Star className="w-3 h-3 text-[#a39d90] mr-1" />
                                     <label className="text-xs font-semibold text-[#a39d90] uppercase tracking-wider block">Datum zaruka *</label>
                                 </div>
-                                <input required value={engagementDate} max={today} onChange={(e) => setEngagementDate(e.target.value)} placeholder="28. svibnja 2027." className="border border-gray-300 rounded-xl py-2 px-4 focus:outline-none focus:ring-2 focus:ring-gray-400 text-gray-800 transition" type="date" />
+                                <input required 
+                                    value={engagementDate} 
+                                    max={today} 
+                                    onChange={(e) => {
+                                        setEngagementDate(e.target.value);
+                                    }} 
+                                    placeholder="28. svibnja 2027." 
+                                    className="border border-gray-300 rounded-xl py-2 px-4 focus:outline-none focus:ring-2 focus:ring-gray-400 text-gray-800 transition" type="date" />
                             </div>
                             <div className="flex flex-col gap-2 w-full">
                                 <div className="flex items-center">
                                     <Calendar className="w-3 h-3 text-[#a39d90] mr-1" />
                                     <label className="text-xs font-semibold text-[#a39d90] uppercase tracking-wider block">Datum vjenčanja</label>
                                 </div>
-                                 <input value={weddingDate} min={today} onChange={(e) => setWeddingDate(e.target.value)} placeholder="28. svibnja 2027." className="border border-gray-300 rounded-xl py-2 px-4 focus:outline-none focus:ring-2 focus:ring-gray-400 text-gray-800 transition" type="date" />
+                                 <input
+                                    value={weddingDate} 
+                                    min={today} 
+                                    onChange={(e) => {
+                                        setWeddingDate(e.target.value);
+                                    }} 
+                                    placeholder="28. svibnja 2027." 
+                                    className="border border-gray-300 rounded-xl py-2 px-4 focus:outline-none focus:ring-2 focus:ring-gray-400 text-gray-800 transition" type="date" />
                             </div>
                         </div>
                         <div className="flex flex-col gap-2 w-full mt-4">
@@ -203,11 +225,22 @@ const Onboarding = () => {
                             </button>
                             <button
                                 type="button"
-                                onClick={() =>
-                                    {(!engagementDate)
-                                        ? setMissingFields(true)
-                                        : (setStep(step + 1), setMissingFields(false))
-                                    }}
+                                onClick={() => {
+                                    if (!engagementDate) {
+                                        setMissingFields(true);
+                                        return;
+                                    }
+                                    if (engagementDate > today) {
+                                        setWrongEngagementDate(true);
+                                        return;
+                                    }
+                                    if (weddingDate && weddingDate < today) {
+                                        setWrongWeddingDate(true);
+                                        return;
+                                    }
+                                    setStep(step + 1);
+                                    setMissingFields(false);
+                                }}
                                 className="cursor-pointer bg-linear-to-r from-[#c39d76] to-[#8B6B47] text-white font-semibold py-2 px-6 rounded-xl hover:bg-[#8c7b6b] transition">
                             Nastavi</button>
                         </div>
@@ -297,6 +330,19 @@ const Onboarding = () => {
                     </div>
                 )}
             </div>
+            {wrongEngagementDate && (
+                <ErrorModal 
+                    onCancel={() => setWrongEngagementDate(false)}
+                    desc={`Pogreška kod unosa datuma zaruka. Vrijednost ne može biti veća od današnjeg (${formatTaskDate(today)}) datuma.`}
+                />
+            )}
+
+            {wrongWeddingDate && (
+                <ErrorModal 
+                    onCancel={() => setWrongWeddingDate(false)}
+                    desc={`Pogreška kod unosa datuma vjenčanja. Vrijednost ne može biti manja od današnjeg (${formatTaskDate(today)}) datuma.`}
+                />
+            )}
         </div>
     );
 };

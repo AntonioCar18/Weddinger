@@ -1,3 +1,5 @@
+# Podsjeća na istek roka za uplatu
+
 import requests
 from database import takeFromBase, executeQuery
 from email_service import send_email

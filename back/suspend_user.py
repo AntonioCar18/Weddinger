@@ -1,3 +1,5 @@
+# Prebacuje is_active u false
+
 from database import takeFromBase, executeQuery
 from email_service import send_email
 
